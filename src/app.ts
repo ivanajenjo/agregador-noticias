@@ -1,5 +1,5 @@
-import express from "express"
-import morgan from "morgan"
+import express from "express";
+import morgan from "morgan";
 
 //inicializaciones
 const app = express();
