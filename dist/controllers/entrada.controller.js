@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getEntradas = void 0;
+exports.crearEntrada = exports.getEntradas = void 0;
 //Modelos
 const entrada_1 = __importDefault(require("../models/entrada"));
 function getEntradas(req, res) {
@@ -22,4 +22,18 @@ function getEntradas(req, res) {
     });
 }
 exports.getEntradas = getEntradas;
+;
+function crearEntrada(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { title, description } = req.body;
+        const newEntrada = { title, description, imagePath: req.file.path };
+        const photo = new entrada_1.default(newEntrada);
+        yield photo.save();
+        return res.json({
+            message: 'Photo Saved Successfully',
+            photo
+        });
+    });
+}
+exports.crearEntrada = crearEntrada;
 ;
