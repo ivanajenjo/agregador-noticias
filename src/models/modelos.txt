@@ -1,0 +1,5 @@
+Noticia
+    Titular
+    Fuente
+    Fecha
+    ImagePath

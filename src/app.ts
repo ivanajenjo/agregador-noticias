@@ -1,6 +1,8 @@
 import express from "express";
 import morgan from "morgan";
 
+import apiroutes from './routes/api.routes'
+
 //inicializaciones
 const app = express();
 
@@ -14,5 +16,6 @@ app.use(morgan('dev'));
 app.get('/', (req, res) => {
     res.send('Hola Mundo')
 });
+app.use(apiroutes)
 
 export default app
