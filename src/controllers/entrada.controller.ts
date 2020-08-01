@@ -11,12 +11,13 @@ export async function getEntradas(req: Request, res: Response): Promise<Response
 };
 
 export async function crearEntrada(req: Request, res: Response): Promise<Response> {
-    const { title, description } = req.body;
-    const newEntrada = { title, description, imagePath: req.file.path };
-    const photo = new Entrada(newEntrada);
-    await photo.save();
+    const { nombre, fuente } = req.body;
+    const fecha = new Date();
+    const newEntrada = { nombre, fuente, fecha, imagePath: req.file.path };
+    const entrada = new Entrada(newEntrada);
+    await entrada.save();
     return res.json({
-        message: 'Photo Saved Successfully',
-        photo
+        message: 'Captura guardada satisfactoriamente',
+        entrada
     });
 };

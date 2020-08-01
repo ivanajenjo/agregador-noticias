@@ -9,7 +9,7 @@
     "build": "tsc"
   },
   "keywords": [],
-  "author": "",
+  "author": "Ivan",
   "license": "ISC",
   "dependencies": {
     "express": "^4.17.1",

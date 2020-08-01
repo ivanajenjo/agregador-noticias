@@ -25,13 +25,14 @@ exports.getEntradas = getEntradas;
 ;
 function crearEntrada(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { title, description } = req.body;
-        const newEntrada = { title, description, imagePath: req.file.path };
-        const photo = new entrada_1.default(newEntrada);
-        yield photo.save();
+        const { nombre, fuente } = req.body;
+        const fecha = new Date();
+        const newEntrada = { nombre, fuente, fecha, imagePath: req.file.path };
+        const entrada = new entrada_1.default(newEntrada);
+        yield entrada.save();
         return res.json({
-            message: 'Photo Saved Successfully',
-            photo
+            message: 'Captura guardada satisfactoriamente',
+            entrada
         });
     });
 }
