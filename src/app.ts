@@ -1,6 +1,8 @@
 import express from "express";
 import morgan from "morgan";
 import path from 'path';
+import { getCapturas } from "./libs/scraper";
+import cron, {  } from "node-cron";
 
 import apiroutes from './routes/api.routes';
 import entradasroutes from './routes/entradas.routes';
@@ -15,12 +17,19 @@ app.set('port', process.env.PORT || 3000);
 app.use(morgan('dev'));
 app.use(express.json());
 
+//Tareas Programadas Por horas
+cron.schedule("* 9,15,22 * * *", async function(){
+    console.log("Realizando capturas");
+    await getCapturas();
+});
+
 //rutas
 app.get('/', (req, res) => {
     res.send('Hola Mundo');
 });
+
 app.use('/capturas', express.static(path.resolve('capturas')));
-app.use(apiroutes);
-app.use(entradasroutes);
+app.use('/home', apiroutes);
+app.use('/entradas', entradasroutes);
 
 export default app
