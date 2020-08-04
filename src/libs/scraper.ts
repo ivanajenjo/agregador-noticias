@@ -11,7 +11,7 @@ async function captElPais(){
     await page.setViewport({ width: 1280, height: 800 })
     await page.goto('https://www.elpais.com/');	
     //Aceptar Cookies
-    await page.click('#didomi-notice-agree-button');
+    //await page.click('#didomi-notice-agree-button');
     await page.screenshot({ path: 'temp/elpais.png', fullPage: true })
     await browser.close();
 }

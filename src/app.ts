@@ -20,7 +20,7 @@ app.use(express.json());
 //Tareas Programadas Por horas
 cron.schedule("* 9,15,22 * * *", async function(){
     console.log("Realizando capturas");
-    await getCapturas();
+    getCapturas();
 });
 
 //rutas
