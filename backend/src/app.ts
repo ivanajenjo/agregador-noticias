@@ -18,7 +18,7 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 //Tareas Programadas Por horas
-cron.schedule("* 9,15,22 * * *", async function () {
+cron.schedule("0 0 9,17,22 * *", async function () {
   console.log("Realizando capturas");
   getCapturas();
 });
