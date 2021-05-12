@@ -35,7 +35,7 @@ app.get("/realizarCapturas", (req, res) => {
 });
 
 app.use("/capturas", express.static(path.resolve("capturas")));
-app.use("/home", apiroutes);
+app.use("/api", apiroutes);
 app.use("/entradas", entradasroutes);
 
 export default app;
