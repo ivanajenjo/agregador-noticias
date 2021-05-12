@@ -5,7 +5,7 @@ import { getCapturas } from "./libs/scraper";
 import cron from "node-cron";
 
 import apiroutes from "./routes/api.routes";
-import entradasroutes from "./routes/entradas.routes";
+
 
 //inicializaciones
 const app = express();
@@ -36,6 +36,6 @@ app.get("/realizarCapturas", (req, res) => {
 
 app.use("/capturas", express.static(path.resolve("capturas")));
 app.use("/api", apiroutes);
-app.use("/entradas", entradasroutes);
+
 
 export default app;
