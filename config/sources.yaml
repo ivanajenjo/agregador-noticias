@@ -1,0 +1,179 @@
+# Fuentes de noticias del agregador.
+#
+# IMPORTANTE: el campo `leaning` (izquierda, centro-izquierda, centro,
+# centro-derecha, derecha) es una etiqueta SUBJETIVA y editable por el usuario;
+# no pretende ser una clasificación objetiva. Cambiala a tu criterio.
+#
+# Feeds verificados con `curl -sSL` (HTTP 200, RSS/Atom valido con items).
+# `cookie_selectors`: selectores del boton "aceptar" del consentimiento (Didomi,
+# OneTrust, Funding Choices); varios por fuente como alternativas, algunos son
+# estimaciones razonables y pueden requerir ajuste.
+# `full_text: true` => se descarga la pagina del articulo con readability cuando
+# el feed solo trae un resumen corto.
+
+sources:
+  - id: elpais
+    name: "El País"
+    leaning: centro-izquierda
+    homepage: https://elpais.com
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada", section: "portada" }
+      - { url: "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/espana/portada", section: "españa" }
+      - { url: "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/economia/portada", section: "economía" }
+  - id: eldiario
+    name: "elDiario.es"
+    leaning: izquierda
+    homepage: https://www.eldiario.es
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.eldiario.es/rss/", section: "portada" }
+      - { url: "https://www.eldiario.es/rss/politica/", section: "política" }
+      - { url: "https://www.eldiario.es/rss/economia/", section: "economía" }
+  - id: infolibre
+    name: "infoLibre"
+    leaning: izquierda
+    homepage: https://www.infolibre.es
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#didomi-notice-agree-button", "#onetrust-accept-btn-handler"]
+    feeds:
+      - { url: "https://www.infolibre.es/rss/", section: "portada" }
+  - id: lavanguardia
+    name: "La Vanguardia"
+    leaning: centro
+    homepage: https://www.lavanguardia.com
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.lavanguardia.com/rss/home.xml", section: "portada" }
+      - { url: "https://www.lavanguardia.com/rss/politica.xml", section: "política" }
+      - { url: "https://www.lavanguardia.com/rss/economia.xml", section: "economía" }
+  - id: elperiodico
+    name: "El Periódico"
+    leaning: centro-izquierda
+    homepage: https://www.elperiodico.com
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.elperiodico.com/es/rss/politica/rss.xml", section: "política" }
+      - { url: "https://www.elperiodico.com/es/rss/internacional/rss.xml", section: "internacional" }
+  - id: 20minutos
+    name: "20minutos"
+    leaning: centro
+    homepage: https://www.20minutos.es
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.20minutos.es/rss/", section: "portada" }
+      - { url: "https://www.20minutos.es/rss/nacional/", section: "nacional" }
+      - { url: "https://www.20minutos.es/rss/economia/", section: "economía" }
+  - id: elmundo
+    name: "El Mundo"
+    leaning: centro-derecha
+    homepage: https://www.elmundo.es
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#onetrust-accept-btn-handler"]
+    feeds:
+      - { url: "https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml", section: "portada" }
+      - { url: "https://e00-elmundo.uecdn.es/elmundo/rss/espana.xml", section: "españa" }
+      - { url: "https://e00-elmundo.uecdn.es/elmundo/rss/economia.xml", section: "economía" }
+  - id: abc
+    name: "ABC"
+    leaning: derecha
+    homepage: https://www.abc.es
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.abc.es/rss/2.0/portada/", section: "portada" }
+      - { url: "https://www.abc.es/rss/2.0/espana/", section: "españa" }
+      - { url: "https://www.abc.es/rss/2.0/economia/", section: "economía" }
+  - id: elconfidencial
+    name: "El Confidencial"
+    leaning: centro
+    homepage: https://www.elconfidencial.com
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://rss.elconfidencial.com/espana/", section: "españa" }
+      - { url: "https://rss.elconfidencial.com/economia/", section: "economía" }
+      - { url: "https://rss.elconfidencial.com/mundo/", section: "mundo" }
+  - id: elespanol
+    name: "El Español"
+    leaning: centro-derecha
+    homepage: https://www.elespanol.com
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.elespanol.com/rss/", section: "portada" }
+      - { url: "https://www.elespanol.com/rss/espana/", section: "españa" }
+  - id: okdiario
+    name: "OKDiario"
+    leaning: derecha
+    homepage: https://okdiario.com
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#didomi-notice-agree-button", "button.fc-cta-consent"]
+    feeds:
+      - { url: "https://okdiario.com/feed", section: "portada" }
+      - { url: "https://okdiario.com/espana/feed", section: "españa" }
+      - { url: "https://okdiario.com/economia/feed", section: "economía" }
+  - id: libertaddigital
+    name: "Libertad Digital"
+    leaning: derecha
+    homepage: https://www.libertaddigital.com
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#didomi-notice-agree-button", "button.fc-cta-consent"]
+    feeds:
+      - { url: "https://www.libertaddigital.com/rss/portada.xml", section: "portada" }
+  - id: theobjective
+    name: "The Objective"
+    leaning: centro-derecha
+    homepage: https://theobjective.com
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#didomi-notice-agree-button", "#onetrust-accept-btn-handler"]
+    feeds:
+      - { url: "https://theobjective.com/feed/", section: "portada" }
+      - { url: "https://theobjective.com/espana/feed/", section: "españa" }
+      - { url: "https://theobjective.com/internacional/feed/", section: "internacional" }
+  - id: eldebate
+    name: "El Debate"
+    leaning: derecha
+    homepage: https://www.eldebate.com
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#didomi-notice-agree-button", "#onetrust-accept-btn-handler"]
+    feeds:
+      - { url: "https://www.eldebate.com/rss/espana.xml", section: "españa" }
+  - id: expansion
+    name: "Expansión"
+    leaning: centro-derecha
+    homepage: https://www.expansion.com
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#onetrust-accept-btn-handler"]
+    feeds:
+      - { url: "https://e00-expansion.uecdn.es/rss/portada.xml", section: "portada" }
+
+# Fallaron la verificacion (no incluidos), desde este sandbox:
+#  - Publico: https://www.publico.es/rss/, /rss/politica, /feed, /rss.xml -> 404
+#  - La Razon: https://www.larazon.es/rss/portada.xml -> 503 (bloqueo anti-bot); /feed/, /espana/rss.xml -> 404
+#  - Cadena SER: https://cadenaser.com/rss/, /rss-ser/, feedburner -> 404
+#  - RTVE: /api/noticias.rss, /rss/noticias.xml -> 404; /rss/temas_noticias.xml responde pero contenido de 2022 (obsoleto)
+#  - Vozpopuli: /rss/, /feed, /rss.xml -> 404/403
+#  - El Economista: 403; La Sexta: 400/0 items; El Plural: 404/0 items
+#  - Feeds sueltos descartados: elconfidencial /portada/ (0 items), elespanol /rss/economia/ (404),
+#    libertaddigital /rss/espana.xml (404), theobjective /economia/feed/ (0 items)

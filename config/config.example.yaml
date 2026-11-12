@@ -1,0 +1,34 @@
+# Copia a config/config.yaml (o monta en /config/config.yaml en Docker).
+# Cualquier valor se puede sobreescribir con AGREGADOR_* (ver internal/config/config.go).
+listen: ":8080"
+data_dir: data
+sources_file: config/sources.yaml
+timezone: Europe/Madrid
+log_level: info
+# auth: { user: ivan, pass: cambiame }   # o AGREGADOR_AUTH_USER / AGREGADOR_AUTH_PASS
+
+ingest:
+  enabled: true
+  cron: "*/30 * * * *"
+  fetch_full_text: true
+  respect_robots: true
+
+screenshots:
+  enabled: true
+  cron: "0 9,17,22 * * *"       # 09:00, 17:00 y 22:00 hora local
+  # Elige UNA de estas dos formas de tener navegador (no hay Chromium residente en la Pi):
+  # remote_url: "ws://chrome:9222"     # sidecar `docker compose --profile shots up` o Chromium en el Mac
+  # chrome_path: /usr/bin/chromium     # binario local lanzado solo durante la captura
+  quality: 70
+  retention: 2160h               # 90 días
+
+# Servidor con API compatible OpenAI en tu Mac/PC (Ollama, LM Studio, llama.cpp, mlx-lm...).
+# Si está apagado, el sistema sigue ingiriendo y la búsqueda funciona solo con FTS.
+embeddings:
+  base_url: "http://macbook.local:11434/v1"
+  model: "nomic-embed-text"
+  # query_prefix: "search_query: "
+  # doc_prefix: "search_document: "
+chat:
+  base_url: "http://macbook.local:11434/v1"
+  model: "qwen3:14b"

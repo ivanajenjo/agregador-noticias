@@ -1,0 +1,26 @@
+services:
+  agregador:
+    build: { context: ., dockerfile: deploy/Dockerfile }
+    restart: unless-stopped
+    ports: ["8080:8080"]
+    volumes:
+      - ./data:/data
+      # - ./config/config.yaml:/config/config.yaml:ro
+    environment:
+      TZ: Europe/Madrid
+      AGREGADOR_EMBEDDINGS_BASE_URL: ${EMBEDDINGS_BASE_URL:-}   # p.ej. http://macbook.local:11434/v1
+      AGREGADOR_EMBEDDINGS_MODEL: ${EMBEDDINGS_MODEL:-nomic-embed-text}
+      AGREGADOR_CHAT_BASE_URL: ${CHAT_BASE_URL:-}
+      AGREGADOR_CHAT_MODEL: ${CHAT_MODEL:-}
+      AGREGADOR_SCREENSHOTS_REMOTE_URL: ${CHROME_URL:-}         # ws://chrome:9222 con el perfil "shots"
+    mem_limit: 256m
+    cpus: 1.0
+
+  # Chromium para capturas, solo con `docker compose --profile shots up -d`.
+  chrome:
+    profiles: ["shots"]
+    image: chromedp/headless-shell:latest
+    restart: unless-stopped
+    shm_size: 512m
+    mem_limit: 768m
+    cpus: 1.5
