@@ -57,7 +57,10 @@ preguntar (RAG)** para comparar cómo cada medio cuenta lo mismo. Uso personal, 
 - **Preguntar**: chat RAG con streaming y citas.
 - **Capturas**: elegir día y ver portadas lado a lado; línea temporal por medio; ampliar imagen.
 - **Estado**: salud de fuentes, última ingesta, cola de embeddings, estado del LLM remoto, espacio en disco.
-- Español, responsive, sin dependencias externas en runtime (htmx vendorizado y embebido en el binario).
+- Español, sin dependencias externas en runtime (htmx vendorizado y embebido en el binario).
+- **Móvil de primera clase** (se usará mucho desde el teléfono): diseño mobile-first, **PWA instalable**
+  (manifest + service worker mínimo con página offline), navegación inferior tipo app, áreas táctiles ≥ 44 px,
+  visor de capturas a pantalla completa con zoom/swipe, chat RAG cómodo con teclado, tablas convertidas en tarjetas.
 
 ### RF6 API JSON (misma lógica que la UI)
 `GET /api/articles`, `/api/search`, `/api/screenshots`, `POST /api/ask` (SSE), `POST /api/jobs/{ingest|screenshots}`, `GET /healthz`, `GET /api/status`.
@@ -71,13 +74,24 @@ preguntar (RAG)** para comparar cómo cada medio cuenta lo mismo. Uso personal, 
 - **Mantenibilidad**: paquetes pequeños con interfaces en `internal/domain`; sin frameworks pesados (stdlib `net/http` + `chi` opcional).
 - **Legal/ético**: uso personal; respetar `robots.txt` en extracción de artículo completo, rate limit, no republicar contenido. Las "líneas editoriales" son etiquetas **editables por el usuario**, no una verdad objetiva.
 
-## 5. Fuera de alcance (por ahora)
-Multiusuario, app móvil, análisis de sentimiento/sesgo automático, notificaciones, scraping de contenidos tras paywall.
+## 5. Etapas posteriores (el diseño debe dejarlas preparadas)
+- **Anotación de sesgo/intención por noticia con un modelo pequeño** (clasificador local o LLM pequeño en el
+  Mac/PC, p. ej. 1–8B vía el mismo servidor OpenAI-compatible): etiquetas como tono (neutral/alarmista/…),
+  intención (informar/opinar/persuadir), encuadre o posicionamiento, con puntuación y justificación breve.
+  - Tabla `article_annotations (article_id, kind, model, label, score, data JSON)`: varios modelos y tipos conviven,
+    cambiar de modelo = reanotar sin perder lo anterior.
+  - Worker de anotación análogo al de embeddings (backfill, tolerante a que el Mac esté apagado, por lotes, en horas de baja carga).
+  - Las etiquetas son **inferencias probabilísticas del modelo, no verdades**: la UI las muestra como tales, con el modelo usado.
+  - UI futura: filtros/agrupación por etiqueta, comparación de tono entre medios para un mismo tema, y uso como filtro en RAG.
 
-## 6. Criterios de aceptación
+## 6. Fuera de alcance (por ahora)
+Multiusuario, app móvil nativa (se cubre con PWA), notificaciones, scraping de contenidos tras paywall.
+
+## 7. Criterios de aceptación
 1. `go build ./... && go test ./...` en verde; `GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build` funciona.
 2. Con red: tras arrancar, aparecen artículos de ≥ 8 medios en la portada en pocos minutos.
 3. Con un servidor OpenAI-compatible falso, los artículos se embeben y la búsqueda híbrida y el RAG con citas funcionan; sin él, la búsqueda FTS funciona y la UI explica el estado.
 4. Una captura de portada de al menos un medio se guarda, se ve en la UI y se limpia por retención.
 5. RSS en reposo < 100 MB con 50k artículos indexados (brute-force coseno medido y documentado).
-6. `docker compose up` levanta el servicio; documentado cómo apuntar al LLM del Mac.
+6. La UI es usable a 390×844 y se puede instalar como PWA; el esquema admite anotaciones (tabla + worker futuro).
+7. `docker compose up` levanta el servicio; documentado cómo apuntar al LLM del Mac.
