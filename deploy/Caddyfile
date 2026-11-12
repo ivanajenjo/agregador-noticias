@@ -1,0 +1,15 @@
+# HTTPS interno para la LAN: Caddy genera su propia CA ("tls internal") y firma el certificado
+# del nombre indicado en AGREGADOR_HOST (p. ej. raspberrypi.local, que publica avahi/mDNS en la Pi).
+# Para un dominio real (DuckDNS, Tailscale `tailscale cert`...) ver docs/DESPLIEGUE.md.
+{
+	admin off
+}
+
+{$AGREGADOR_HOST:raspberrypi.local} {
+	tls internal
+	encode zstd gzip
+	reverse_proxy agregador:8080 {
+		# La sincronizacion/streaming de la UI no debe bufferizarse.
+		flush_interval -1
+	}
+}

@@ -1,0 +1,10 @@
+[Unit]
+Description=Copia diaria del agregador de noticias
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+RandomizedDelaySec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

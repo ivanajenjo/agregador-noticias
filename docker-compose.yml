@@ -1,26 +1,128 @@
+# Agregador de noticias para una Raspberry Pi COMPARTIDA con otros proyectos.
+# Toda la configuracion sale de `.env` (copia `.env.example`). Guia completa: docs/DESPLIEGUE.md
+#
+#   docker compose up -d                          # solo la app (capturas: ver AGREGADOR_TAG/CHROME_URL)
+#   docker compose --profile shots up -d          # + sidecar Chromium headless para capturas
+#   docker compose --profile https up -d          # + Caddy con HTTPS interno (necesario para instalar la PWA)
+#
+# Seguridad: sin privilegios, cap_drop ALL, sistema de ficheros de solo lectura (escribe en /data y /tmp).
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"   # los logs rotan: cuida la SD
+    max-file: "3"
+
 services:
   agregador:
-    build: { context: ., dockerfile: deploy/Dockerfile }
+    image: ${AGREGADOR_IMAGE:-ghcr.io/ivanajenjo/agregador-noticias}:${AGREGADOR_TAG:-latest}
+    # `docker compose up -d --build` compila en la Pi (lento, ~5 min) en lugar de descargar la imagen.
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      target: ${AGREGADOR_TARGET:-slim}      # slim | chromium
+    container_name: agregador
     restart: unless-stopped
-    ports: ["8080:8080"]
+    init: true                               # reaper de zombies (importante si lanza Chromium)
+    user: "${AGREGADOR_UID:-10001}:${AGREGADOR_GID:-10001}"
+    read_only: true
+    tmpfs:
+      - /tmp:size=${AGREGADOR_TMP_SIZE:-256m},mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    stop_grace_period: 30s                   # el binario cierra en < 15 s con SIGTERM
+    mem_limit: ${AGREGADOR_MEM_LIMIT:-256m}  # con imagen -chromium sube a 768m (ver .env.example)
+    memswap_limit: ${AGREGADOR_MEM_LIMIT:-256m}
+    cpus: ${AGREGADOR_CPUS:-1.0}
+    pids_limit: ${AGREGADOR_PIDS_LIMIT:-256}
+    ports:
+      # Puerto del host configurable para no chocar con otros proyectos. Con el perfil https
+      # pon AGREGADOR_BIND=127.0.0.1 para que solo se llegue a traves de Caddy.
+      - "${AGREGADOR_BIND:-0.0.0.0}:${AGREGADOR_PORT:-8080}:8080"
     volumes:
-      - ./data:/data
-      # - ./config/config.yaml:/config/config.yaml:ro
+      - ./data:/data                         # SQLite + capturas (el dueño debe ser AGREGADOR_UID)
+      - ./config:/config:ro                  # sources.yaml (y config.yaml opcional)
     environment:
-      TZ: Europe/Madrid
-      AGREGADOR_EMBEDDINGS_BASE_URL: ${EMBEDDINGS_BASE_URL:-}   # p.ej. http://macbook.local:11434/v1
-      AGREGADOR_EMBEDDINGS_MODEL: ${EMBEDDINGS_MODEL:-nomic-embed-text}
-      AGREGADOR_CHAT_BASE_URL: ${CHAT_BASE_URL:-}
-      AGREGADOR_CHAT_MODEL: ${CHAT_MODEL:-}
-      AGREGADOR_SCREENSHOTS_REMOTE_URL: ${CHROME_URL:-}         # ws://chrome:9222 con el perfil "shots"
-    mem_limit: 256m
-    cpus: 1.0
+      TZ: ${TZ:-Europe/Madrid}
+      AGREGADOR_TIMEZONE: ${TZ:-Europe/Madrid}
+      AGREGADOR_LISTEN: ":8080"
+      AGREGADOR_SOURCES_FILE: /config/sources.yaml
+      GOMEMLIMIT: ${AGREGADOR_GOMEMLIMIT:-96MiB}
+      AGREGADOR_LOG_LEVEL: ${AGREGADOR_LOG_LEVEL:-info}
+      AGREGADOR_AUTH_USER: ${AGREGADOR_AUTH_USER:-}
+      AGREGADOR_AUTH_PASS: ${AGREGADOR_AUTH_PASS:-}
+      AGREGADOR_INGEST_ENABLED: ${AGREGADOR_INGEST_ENABLED:-true}
+      AGREGADOR_INGEST_CRON: ${AGREGADOR_INGEST_CRON:-*/30 * * * *}
+      AGREGADOR_SCREENSHOTS_ENABLED: ${AGREGADOR_SCREENSHOTS_ENABLED:-true}
+      AGREGADOR_SCREENSHOTS_CRON: ${AGREGADOR_SCREENSHOTS_CRON:-0 9,17,22 * * *}
+      AGREGADOR_SCREENSHOTS_QUALITY: ${AGREGADOR_SCREENSHOTS_QUALITY:-70}
+      AGREGADOR_SCREENSHOTS_RETENTION: ${AGREGADOR_SCREENSHOTS_RETENTION:-2160h}
+      AGREGADOR_SCREENSHOTS_REMOTE_URL: ${AGREGADOR_SCREENSHOTS_REMOTE_URL:-}
+      AGREGADOR_SCREENSHOTS_NO_SANDBOX: ${AGREGADOR_SCREENSHOTS_NO_SANDBOX:-true}
+      AGREGADOR_EMBEDDINGS_BASE_URL: ${AGREGADOR_EMBEDDINGS_BASE_URL:-}
+      AGREGADOR_EMBEDDINGS_MODEL: ${AGREGADOR_EMBEDDINGS_MODEL:-nomic-embed-text}
+      AGREGADOR_EMBEDDINGS_API_KEY: ${AGREGADOR_EMBEDDINGS_API_KEY:-}
+      AGREGADOR_EMBEDDINGS_QUERY_PREFIX: ${AGREGADOR_EMBEDDINGS_QUERY_PREFIX:-}
+      AGREGADOR_EMBEDDINGS_DOC_PREFIX: ${AGREGADOR_EMBEDDINGS_DOC_PREFIX:-}
+      AGREGADOR_CHAT_BASE_URL: ${AGREGADOR_CHAT_BASE_URL:-}
+      AGREGADOR_CHAT_MODEL: ${AGREGADOR_CHAT_MODEL:-}
+      AGREGADOR_CHAT_API_KEY: ${AGREGADOR_CHAT_API_KEY:-}
+    networks: [agregador]
+    # Si Ollama corre en la propia Pi/host en vez de en el Mac: usa host.docker.internal
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    logging: *logging
 
-  # Chromium para capturas, solo con `docker compose --profile shots up -d`.
+  # Chromium headless como sidecar (perfil `shots`). Consume ~300-700 MB mientras esta encendido,
+  # por eso es opcional: la imagen `-chromium` lo lanza solo durante la captura y es mas ligera en conjunto.
+  # IMPORTANTE: Chromium rechaza cabeceras Host que no sean IP/localhost, asi que la app
+  # lo alcanza por IP fija:  AGREGADOR_SCREENSHOTS_REMOTE_URL=ws://172.29.77.10:9222
   chrome:
     profiles: ["shots"]
-    image: chromedp/headless-shell:latest
+    image: chromedp/headless-shell:158.0.8127.18
+    container_name: agregador-chrome
     restart: unless-stopped
+    init: true
     shm_size: 512m
-    mem_limit: 768m
-    cpus: 1.5
+    mem_limit: ${CHROME_MEM_LIMIT:-768m}
+    memswap_limit: ${CHROME_MEM_LIMIT:-768m}
+    cpus: ${CHROME_CPUS:-1.5}
+    pids_limit: 512
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    networks:
+      agregador:
+        ipv4_address: ${CHROME_IP:-172.29.77.10}
+    logging: *logging
+
+  # Proxy inverso con HTTPS (CA interna de Caddy, sin dominio publico). Perfil `https`.
+  caddy:
+    profiles: ["https"]
+    image: caddy:2.10-alpine
+    container_name: agregador-caddy
+    restart: unless-stopped
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 64m
+    ports:
+      - "${CADDY_HTTP_PORT:-80}:80"
+      - "${CADDY_HTTPS_PORT:-443}:443"
+    environment:
+      AGREGADOR_HOST: ${AGREGADOR_HOST:-raspberrypi.local}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [agregador]
+    logging: *logging
+
+networks:
+  agregador:
+    name: agregador
+    ipam:
+      config:
+        - subnet: ${AGREGADOR_SUBNET:-172.29.77.0/24}
+
+volumes:
+  caddy_data:
+  caddy_config:

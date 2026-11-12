@@ -5,3 +5,7 @@ data/
 *.db-*
 /agregador
 .env
+backups/
+config/config.yaml
+.last-image
+caddy-root.crt

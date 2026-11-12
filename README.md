@@ -26,12 +26,15 @@ go run ./cmd/agregador
 Si el Mac está apagado, la ingesta sigue y la búsqueda funciona con FTS; los embeddings se completan solos al volver.
 
 ## Despliegue en la Raspberry
+Imagen Docker multi-arch (arm64/amd64) publicada en GHCR desde GitHub Actions; compose con límites de RAM/CPU, healthcheck,
+sistema de ficheros de solo lectura y logs rotados, pensado para una Pi **compartida**. Guía completa: [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md).
 ```bash
-make arm64                         # dist/agregador-arm64 (estático, ~17 MB)
-docker compose up -d               # o con capturas: docker compose --profile shots up -d
+git clone https://github.com/ivanajenjo/agregador-noticias.git && cd agregador-noticias
+deploy/pi-install.sh --install-docker     # .env, imagen, `docker compose up -d` y URL (opciones: --chromium --shots --https)
 ```
-Las capturas usan un Chromium **bajo demanda**: sidecar `chrome` (perfil `shots`) o Chromium remoto en el Mac (`screenshots.remote_url`).
-La PWA solo se instala por HTTPS o localhost (service worker).
+- Variables: [.env.example](.env.example) (puerto, auth, LLM del Mac, capturas, límites). Usa la **IP** del Mac, no `macbook.local`.
+- Capturas: imagen `-chromium` (bajo demanda), sidecar `--profile shots` o Chromium remoto. HTTPS para la PWA: `--profile https` (Caddy).
+- Copias: `make backup` · Actualizar: `make update` · Binario suelto: `make arm64` (estático, ~17 MB) · Release: `make release VERSION=v1.0.0`.
 
 ## Estado y siguientes pasos
 Hecho: ingesta RSS + texto completo, capturas, FTS5 + búsqueda vectorial híbrida, RAG con comparación por línea editorial, UI móvil/PWA.

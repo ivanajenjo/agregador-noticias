@@ -1,5 +1,16 @@
 name: ci
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -9,4 +20,21 @@ jobs:
         with: { go-version-file: go.mod }
       - run: go vet ./...
       - run: go test -race ./...
-      - run: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o /dev/null ./cmd/agregador
+      - name: Cross-compile linux/arm64 (Raspberry Pi)
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -o /dev/null ./cmd/agregador
+
+  deploy-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: shellcheck -s sh deploy/*.sh
+      - name: hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: deploy/Dockerfile
+          ignore: DL3018,DL3066,DL3025
+      - name: docker compose config
+        run: |
+          cp .env.example .env
+          docker compose --profile shots --profile https config -q

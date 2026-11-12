@@ -1,0 +1,14 @@
+# Copiar a /etc/systemd/system/ y ajustar WorkingDirectory/User. Ver docs/DESPLIEGUE.md.
+[Unit]
+Description=Copia de seguridad SQLite del agregador de noticias
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=pi
+WorkingDirectory=/home/pi/agregador-noticias
+Environment=KEEP=14
+ExecStart=/home/pi/agregador-noticias/deploy/backup.sh
+Nice=19
+IOSchedulingClass=idle

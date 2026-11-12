@@ -1,0 +1,20 @@
+# Copia a docker-compose.override.yml (compose lo aplica solo). Pensado para desarrollo en tu portatil:
+# compila la imagen local, abre el puerto en localhost y relaja el solo-lectura/limites.
+services:
+  agregador:
+    build:
+      target: slim            # o `chromium` para probar capturas locales
+      args:
+        VERSION: dev
+    ports: !override
+      - "127.0.0.1:8080:8080"
+    mem_limit: 1g
+    memswap_limit: 1g
+    environment:
+      AGREGADOR_LOG_LEVEL: debug
+      AGREGADOR_INGEST_CRON: "*/5 * * * *"
+    # Ollama en el propio portatil:
+    # environment:
+    #   AGREGADOR_EMBEDDINGS_BASE_URL: http://host.docker.internal:11434/v1
+    #   AGREGADOR_CHAT_BASE_URL: http://host.docker.internal:11434/v1
+    #   AGREGADOR_CHAT_MODEL: qwen3:14b

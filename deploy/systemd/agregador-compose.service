@@ -1,0 +1,16 @@
+# OPCIONAL. Docker ya reinicia el contenedor al arrancar la Pi gracias a `restart: unless-stopped`;
+# esta unidad solo sirve si prefieres que systemd haga `compose up -d` (p. ej. tras `compose down`).
+[Unit]
+Description=Agregador de noticias (docker compose)
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/pi/agregador-noticias
+ExecStart=/usr/bin/docker compose up -d
+ExecStop=/usr/bin/docker compose stop
+
+[Install]
+WantedBy=multi-user.target

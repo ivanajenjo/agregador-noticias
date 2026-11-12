@@ -1,5 +1,6 @@
-# Copia a config/config.yaml (o monta en /config/config.yaml en Docker).
-# Cualquier valor se puede sobreescribir con AGREGADOR_* (ver internal/config/config.go).
+# Copia a config/config.yaml. En Docker, ./config se monta en /config (solo lectura) y la app lee /config/config.yaml
+# (AGREGADOR_CONFIG); con docker-compose casi todo se maneja desde `.env` (ver .env.example y docs/DESPLIEGUE.md).
+# Precedencia: valores por defecto < este YAML < variables AGREGADOR_* (que ganan siempre).
 listen: ":8080"
 data_dir: data
 sources_file: config/sources.yaml
@@ -16,14 +17,17 @@ ingest:
 screenshots:
   enabled: true
   cron: "0 9,17,22 * * *"       # 09:00, 17:00 y 22:00 hora local
-  # Elige UNA de estas dos formas de tener navegador (no hay Chromium residente en la Pi):
-  # remote_url: "ws://chrome:9222"     # sidecar `docker compose --profile shots up` o Chromium en el Mac
-  # chrome_path: /usr/bin/chromium     # binario local lanzado solo durante la captura
+  # Elige UNA de estas formas de tener navegador (no hay Chromium residente en la Pi):
+  # remote_url: "ws://172.29.77.10:9222"  # sidecar `docker compose --profile shots up` o Chromium en el Mac.
+  #                                       # Chromium solo acepta IP (no nombres .local ni de servicio) en la cabecera Host.
+  # chrome_path: /usr/bin/chromium        # binario local lanzado solo durante la captura (imagen `-chromium`: ya configurado)
+  # no_sandbox: true                      # necesario con Chromium local en contenedor sin privilegios (imagen `-chromium`: ya activo)
   quality: 70
   retention: 2160h               # 90 días
 
 # Servidor con API compatible OpenAI en tu Mac/PC (Ollama, LM Studio, llama.cpp, mlx-lm...).
 # Si está apagado, el sistema sigue ingiriendo y la búsqueda funciona solo con FTS.
+# En Docker usa la IP del Mac (o un nombre DNS real): un contenedor no resuelve nombres mDNS `.local`.
 embeddings:
   base_url: "http://macbook.local:11434/v1"
   model: "nomic-embed-text"

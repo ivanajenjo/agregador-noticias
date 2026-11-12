@@ -1,7 +1,5 @@
 package trends
 
-import "unicode"
-
 // Unigram statistics used to decide whether a sentence-initial capitalised
 // word is part of a proper name.
 const (
@@ -197,6 +195,3 @@ func (x *extractor) gen(text string, isTitle bool, emit func(*cand)) {
 		emit(&c)
 	}
 }
-
-// isLetterOrDigit is a tiny helper shared by tests.
-func isLetterOrDigit(r rune) bool { return unicode.IsLetter(r) || unicode.IsDigit(r) }

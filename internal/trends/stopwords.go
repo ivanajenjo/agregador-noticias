@@ -11,7 +11,7 @@ const baseStop = `
 a al algo alguien alguna algunas alguno algunos algun alla alli ambos ante antes aquel aquella aquellas aquello aquellos
 aqui asi aun aunque bajo bastante bien cada casi como con contra cual cuales cuando cuanto cuantos cuanta cuantas de del
 dentro desde despues donde dos durante e el ella ellas ello ellos en encima entonces entre era eran eras eres es esa esas
-ese eso esos esta estaba estaban estado estamos estan estar estas este esto estos estoy fue fueron fui fuimos ha haber habia
+ese eso esos esta estaba estaban estamos estan estar estas este esto estos estoy fue fueron fui fuimos ha haber habia
 habian hace hacen hacer hacia han hasta hay haya he hecho hemos hoy la las le les lo los mas me mi mia mias mientras mio mios
 mis misma mismas mismo mismos mucha muchas mucho muchos muy nada ni ningun ninguna ninguno ningunos ninguna no nos nosotros
 nuestra nuestras nuestro nuestros nunca o os otra otras otro otros para pero poco pocos podria podrian poder por porque
