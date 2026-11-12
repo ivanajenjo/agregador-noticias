@@ -13,7 +13,7 @@
  {{if .Chart}}
  <div class="chartbox">{{.Chart}}
   <ul class="legend small muted" aria-hidden="true">
-   <li><i class="sw b0"></i>Izquierda</li><li><i class="sw b1"></i>Centro-izq.</li><li><i class="sw b2"></i>Centro</li><li><i class="sw b3"></i>Centro-der.</li><li><i class="sw b4"></i>Derecha</li>
+   <li><i class="sw b0"></i>Izquierda</li><li><i class="sw b1"></i>Centro-izq.</li><li><i class="sw b2"></i>Centro</li><li><i class="sw b3"></i>Centro-der.</li><li><i class="sw b4"></i>Derecha</li><li><i class="sw b5"></i>Sin clasificar</li>
   </ul>
  </div>
  <details class="datatbl"><summary class="small">Ver datos en tabla</summary>
@@ -35,7 +35,7 @@
     <td data-label="Medio"><span class="v"><strong>{{.Name}}</strong>{{if .Leaning}} <span class="badge {{leanClass .Leaning}}">{{.Leaning}}</span>{{end}}{{if .First}} <span class="badge first">primero</span>{{end}}</span></td>
     <td data-label="Primer artículo"><span class="v">{{if isZero .FirstAt}}—{{else}}<time datetime="{{datetime .FirstAt}}">{{fulltime .FirstAt}}</time>{{end}}{{if .Lag}} <span class="muted small">({{.Lag}})</span>{{end}}</span></td>
     <td data-label="Artículos">{{.Count}}</td>
-    <td class="heads">{{range .Headlines}}<a class="ohead" href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.Title}}</a>{{end}}{{if .More}}<span class="muted small">y {{.More}} más</span>{{end}}</td>
+    <td class="heads"><div class="hl">{{range .Headlines}}<a class="ohead" href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.Title}}</a>{{end}}{{if .More}}<span class="muted small">y {{.More}} más</span>{{end}}</div></td>
    </tr>
   {{end}}
   </tbody>

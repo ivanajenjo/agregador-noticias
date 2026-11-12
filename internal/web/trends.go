@@ -194,8 +194,8 @@ func dailyChartSVG(days []domain.DayCount, loc *time.Location) template.HTML {
 // ---- view models ----
 
 type ventOpt struct {
-	Key, Label, URL string
-	On              bool
+	Key, Label, Short, URL string
+	On                     bool
 }
 
 type outletView struct {
@@ -369,7 +369,7 @@ func (s *server) pageTrends(w http.ResponseWriter, r *http.Request) {
 
 	v := trendsView{Vista: vista, Ventana: key, TabStory: s.trendsLink(q, "historias", key), TabTerms: s.trendsLink(q, "terminos", key)}
 	for _, x := range ventanas {
-		v.Ventanas = append(v.Ventanas, ventOpt{Key: x.Key, Label: x.Label, URL: s.trendsLink(q, vista, x.Key), On: x.Key == key})
+		v.Ventanas = append(v.Ventanas, ventOpt{Key: x.Key, Label: x.Label, Short: strings.Replace(x.Label, " horas", " h", 1), URL: s.trendsLink(q, vista, x.Key), On: x.Key == key})
 		if x.Key == key {
 			v.WindowLbl = x.Label
 		}

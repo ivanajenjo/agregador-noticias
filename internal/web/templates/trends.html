@@ -11,7 +11,7 @@
 </nav>
 <div class="tbar">
  <nav class="seg" aria-label="Ventana de tiempo"><span class="muted small">Últimas</span>
-  {{range .Ventanas}}<a class="chip sm{{if .On}} on{{end}}" href="{{.URL}}" hx-get="{{.URL}}" hx-target="#tend" hx-push-url="true"{{if .On}} aria-current="true"{{end}}>{{.Label}}</a>{{end}}
+  {{range .Ventanas}}<a class="chip sm{{if .On}} on{{end}}" aria-label="{{.Label}}" href="{{.URL}}" hx-get="{{.URL}}" hx-target="#tend" hx-push-url="true"{{if .On}} aria-current="true"{{end}}>{{.Short}}</a>{{end}}
  </nav>
 </div>
 {{if .Sources}}
@@ -70,7 +70,7 @@
   <tbody>
   {{range .Terms}}
    <tr>
-    <td data-label="Término"><span class="v"><a class="atitle tname" href="{{.URL}}">{{.Term}}</a>{{if .New}} <span class="badge new">nuevo</span>{{end}}</span></td>
+    <td data-label="Término"><span class="v"><a class="atitle tname" href="{{.URL}}">{{.Term.Term}}</a>{{if .New}} <span class="badge new">nuevo</span>{{end}}</span></td>
     <td data-label="Artículos">{{.Count}}</td>
     <td data-label="Medios">{{.Sources}}</td>
     <td data-label="Evolución" class="sparkc">{{spark .Spark}}</td>

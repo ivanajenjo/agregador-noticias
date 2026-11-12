@@ -210,7 +210,7 @@ input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-sea
 .stories{list-style:none;margin:0;padding:0;display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));align-items:start}
 .story{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.1rem}
 .stitle{font-size:1.3rem;margin:0 0 .4rem;line-height:1.25;overflow-wrap:anywhere}
-.sbadges{margin:0 0 .6rem}.badge.first{background:var(--accent);color:#fff}.badge.new{background:var(--accent);color:#fff}
+.sbadges{margin:0 0 .6rem}.badge.first,.badge.new{background:var(--accent-btn);color:#fff}
 .lean .cap{margin-top:.25rem}
 .outlets{list-style:none;margin:.8rem 0 .4rem;padding:0}
 .outlets li{padding:.55rem 0;border-top:1px solid var(--border)}
@@ -232,14 +232,14 @@ input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-sea
 .dchart .grid{stroke:var(--border);stroke-dasharray:2 3}.dchart .axis{stroke:var(--muted);stroke-width:1}
 .legend{list-style:none;display:flex;flex-wrap:wrap;gap:.2rem .8rem;margin:.3rem 0 0;padding:0}
 .legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:.3rem}
-.sw.b0{background:var(--b0)}.sw.b1{background:var(--b1)}.sw.b2{background:var(--b2)}.sw.b3{background:var(--b3)}.sw.b4{background:var(--b4)}
+.sw.b0{background:var(--b0)}.sw.b1{background:var(--b1)}.sw.b2{background:var(--b2)}.sw.b3{background:var(--b3)}.sw.b4{background:var(--b4)}.sw.b5{background:var(--b5)}
 .datatbl{margin:.5rem 0;max-width:640px}.datatbl summary{cursor:pointer;color:var(--muted);min-height:36px;display:flex;align-items:center}
-.cover .heads{display:flex;flex-direction:column;gap:.2rem}
+.cover .hl{display:flex;flex-direction:column;gap:.2rem}
 @media (max-width:699.98px){
  .nav a{font-size:.62rem;letter-spacing:-.01em;min-width:0}
  .stories{grid-template-columns:1fr}
  .terms td.sparkc,.terms td.leanc{align-items:center}
- .cover td.heads{flex-direction:column;text-align:left}
+ .cover td.heads{display:block;text-align:left}
  .cover td.heads::before{display:none}
  .cover td.heads{padding-top:.4rem;margin-top:.2rem;border-top:1px solid var(--border)}
  .tabs .push{width:auto;margin-left:auto}
