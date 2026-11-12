@@ -2,20 +2,36 @@
 #
 # IMPORTANTE: el campo `leaning` (izquierda, centro-izquierda, centro,
 # centro-derecha, derecha) es una etiqueta SUBJETIVA y editable por el usuario;
-# no pretende ser una clasificación objetiva. Cambiala a tu criterio.
+# no pretende ser una clasificación objetiva. Cambiala a tu criterio. Para
+# agencias, medios públicos y verificadores se usa "centro" (ver `# nota`).
 #
-# Feeds verificados con `curl -sSL` (HTTP 200, RSS/Atom valido con items).
-# `cookie_selectors`: selectores del boton "aceptar" del consentimiento (Didomi,
-# OneTrust, Funding Choices); varios por fuente como alternativas, algunos son
-# estimaciones razonables y pueden requerir ajuste.
-# `full_text: true` => se descarga la pagina del articulo con readability cuando
-# el feed solo trae un resumen corto.
+# `region` (opcional): ámbito geográfico ("nacional" o comunidad). `kind`
+# (opcional): prensa | radio | tv | agencia | digital | verificacion.
+#
+# Feeds verificados con `curl -sSL` y el User-Agent honesto del proyecto
+# ("agregador-noticias/2.0 (personal news aggregator)"): HTTP 200, RSS/Atom
+# valido, >= 5 items y el mas reciente de los ultimos dias. Si un feed solo
+# responde a un User-Agent de navegador NO se incluye (no suplantamos
+# navegadores); ver la lista de fallos al final.
+#
+# Politica de carga (Raspberry Pi): `screenshot: true` solo para los ~20 medios
+# nacionales mas relevantes; false para regionales, nicho, agencias, radio,
+# deportes y verificadores. `full_text: true` => se descarga la pagina del
+# articulo con readability cuando el feed solo trae un resumen corto.
+#
+# `cookie_selectors`: boton "aceptar" del CMP; solo se listan selectores cuyo
+# CMP se vio referenciado en el HTML de la portada (Didomi, Funding Choices,
+# OneTrust); si no se identifico ninguno se deja vacio.
+# Marca y AS son DEPORTES (kind prensa, seccion "deportes"): si no los quieres,
+# pon `enabled: false`.
 
 sources:
   - id: elpais
     name: "El País"
     leaning: centro-izquierda
     homepage: https://elpais.com
+    region: nacional
+    kind: prensa
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -27,6 +43,8 @@ sources:
     name: "elDiario.es"
     leaning: izquierda
     homepage: https://www.eldiario.es
+    region: nacional
+    kind: digital
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -38,6 +56,8 @@ sources:
     name: "infoLibre"
     leaning: izquierda
     homepage: https://www.infolibre.es
+    region: nacional
+    kind: digital
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button", "#onetrust-accept-btn-handler"]
@@ -47,6 +67,8 @@ sources:
     name: "La Vanguardia"
     leaning: centro
     homepage: https://www.lavanguardia.com
+    region: cataluña
+    kind: prensa
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -58,6 +80,11 @@ sources:
     name: "El Periódico"
     leaning: centro-izquierda
     homepage: https://www.elperiodico.com
+    region: cataluña
+    kind: prensa
+    # DESACTIVADA: el servidor (Prensa Ibérica) responde 406 al User-Agent honesto del
+    # agregador y solo sirve el feed a UAs de navegador; no suplantamos navegadores.
+    enabled: false
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -68,6 +95,8 @@ sources:
     name: "20minutos"
     leaning: centro
     homepage: https://www.20minutos.es
+    region: nacional
+    kind: prensa
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -79,6 +108,8 @@ sources:
     name: "El Mundo"
     leaning: centro-derecha
     homepage: https://www.elmundo.es
+    region: nacional
+    kind: prensa
     full_text: true
     screenshot: true
     cookie_selectors: ["#onetrust-accept-btn-handler"]
@@ -90,6 +121,8 @@ sources:
     name: "ABC"
     leaning: derecha
     homepage: https://www.abc.es
+    region: nacional
+    kind: prensa
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -101,6 +134,8 @@ sources:
     name: "El Confidencial"
     leaning: centro
     homepage: https://www.elconfidencial.com
+    region: nacional
+    kind: digital
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -112,6 +147,8 @@ sources:
     name: "El Español"
     leaning: centro-derecha
     homepage: https://www.elespanol.com
+    region: nacional
+    kind: digital
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -122,6 +159,8 @@ sources:
     name: "OKDiario"
     leaning: derecha
     homepage: https://okdiario.com
+    region: nacional
+    kind: digital
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button", "button.fc-cta-consent"]
@@ -133,6 +172,8 @@ sources:
     name: "Libertad Digital"
     leaning: derecha
     homepage: https://www.libertaddigital.com
+    region: nacional
+    kind: digital
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button", "button.fc-cta-consent"]
@@ -142,6 +183,8 @@ sources:
     name: "The Objective"
     leaning: centro-derecha
     homepage: https://theobjective.com
+    region: nacional
+    kind: digital
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button", "#onetrust-accept-btn-handler"]
@@ -153,6 +196,8 @@ sources:
     name: "El Debate"
     leaning: derecha
     homepage: https://www.eldebate.com
+    region: nacional
+    kind: digital
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button", "#onetrust-accept-btn-handler"]
@@ -162,18 +207,395 @@ sources:
     name: "Expansión"
     leaning: centro-derecha
     homepage: https://www.expansion.com
+    region: nacional
+    kind: prensa
     full_text: true
     screenshot: true
     cookie_selectors: ["#onetrust-accept-btn-handler"]
     feeds:
-      - { url: "https://e00-expansion.uecdn.es/rss/portada.xml", section: "portada" }
+      - { url: "https://e00-expansion.uecdn.es/rss/economia.xml", section: "economía" }
+  - id: larazon
+    name: "La Razón"
+    leaning: centro-derecha
+    homepage: https://www.larazon.es
+    region: nacional
+    kind: prensa
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.larazon.es/?outputType=xml", section: "portada" }
+      - { url: "https://www.larazon.es/espana/?outputType=xml", section: "españa" }
+      - { url: "https://www.larazon.es/economia/?outputType=xml", section: "economía" }
+      - { url: "https://www.larazon.es/internacional/?outputType=xml", section: "internacional" }
+  - id: europapress
+    name: "Europa Press"
+    leaning: centro  # nota: agencia de noticias
+    homepage: https://www.europapress.es
+    region: nacional
+    kind: agencia
+    full_text: false
+    screenshot: false
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.europapress.es/rss/rss.aspx", section: "portada" }
+      - { url: "https://www.europapress.es/rss/rss.aspx?ch=66", section: "nacional" }
+      - { url: "https://www.europapress.es/rss/rss.aspx?ch=136", section: "economía" }
+      - { url: "https://www.europapress.es/rss/rss.aspx?ch=69", section: "internacional" }
+  - id: cope
+    name: "COPE"
+    leaning: centro-derecha
+    homepage: https://www.cope.es
+    region: nacional
+    kind: radio
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.cope.es/api/es/news/rss.xml", section: "portada" }
+  - id: ondacero
+    name: "Onda Cero"
+    leaning: centro
+    homepage: https://www.ondacero.es
+    region: nacional
+    kind: radio
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.ondacero.es/rss/8145.xml", section: "portada" }
+  - id: telecinco
+    name: "Telecinco"
+    leaning: centro  # nota: incluye contenido de entretenimiento ademas de informativos
+    homepage: https://www.telecinco.es
+    region: nacional
+    kind: tv
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.telecinco.es/rss.xml", section: "portada" }
+  - id: antena3
+    name: "Antena 3 Noticias"
+    leaning: centro-derecha
+    homepage: https://www.antena3.com
+    region: nacional
+    kind: tv
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.antena3.com/rss/348680.xml", section: "portada" }
+      - { url: "https://www.antena3.com/rss/348696.xml", section: "sociedad" }
+  - id: lasexta
+    name: "laSexta"
+    leaning: centro-izquierda
+    homepage: https://www.lasexta.com
+    region: nacional
+    kind: tv
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.lasexta.com/rss/351410.xml", section: "portada" }
+      - { url: "https://www.lasexta.com/rss/351711.xml", section: "españa" }
+  - id: elplural
+    name: "El Plural"
+    leaning: izquierda
+    homepage: https://www.elplural.com
+    region: nacional
+    kind: digital
+    full_text: true
+    screenshot: true
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.elplural.com/uploads/feeds/feed_elplural_es.xml", section: "portada" }
+  - id: cincodias
+    name: "Cinco Días"
+    leaning: centro-derecha  # nota: prensa economica (grupo Prisa)
+    homepage: https://cincodias.elpais.com
+    region: nacional
+    kind: prensa
+    full_text: true
+    screenshot: true
+    cookie_selectors: []
+    feeds:
+      - { url: "https://feeds.elpais.com/mrss-s/pages/ep/site/cincodias.elpais.com/portada", section: "portada" }
+      - { url: "https://feeds.elpais.com/mrss-s/pages/ep/site/cincodias.elpais.com/section/economia/portada", section: "economía" }
+  - id: elindependiente
+    name: "El Independiente"
+    leaning: centro-derecha
+    homepage: https://www.elindependiente.com
+    region: nacional
+    kind: digital
+    full_text: true
+    screenshot: true
+    cookie_selectors: []
+    feeds:
+      - { url: "https://www.elindependiente.com/feed/", section: "portada" }
+  - id: elconfidencialdigital
+    name: "El Confidencial Digital"
+    leaning: derecha  # nota: no confundir con El Confidencial
+    homepage: https://www.elconfidencialdigital.com
+    region: nacional
+    kind: digital
+    full_text: true
+    screenshot: false
+    cookie_selectors: []
+    feeds:
+      - { url: "https://www.elconfidencialdigital.com/rss", section: "portada" }
+  - id: economiadigital
+    name: "Economía Digital"
+    leaning: centro
+    homepage: https://www.economiadigital.es
+    region: nacional
+    kind: digital
+    full_text: true
+    screenshot: false
+    cookie_selectors: []
+    feeds:
+      - { url: "https://www.economiadigital.es/feed", section: "portada" }
+  - id: lamarea
+    name: "La Marea"
+    leaning: izquierda  # nota: cooperativa de periodistas
+    homepage: https://www.lamarea.com
+    region: nacional
+    kind: digital
+    full_text: true
+    screenshot: false
+    cookie_selectors: []
+    feeds:
+      - { url: "https://www.lamarea.com/feed/", section: "portada" }
+  - id: maldita
+    name: "Maldita.es"
+    leaning: centro  # nota: verificacion de datos / fact-checking
+    homepage: https://maldita.es
+    region: nacional
+    kind: verificacion
+    full_text: true
+    screenshot: false
+    cookie_selectors: []
+    feeds:
+      - { url: "https://maldita.es/feed/", section: "portada" }
+      - { url: "https://maldita.es/malditobulo/feed/", section: "bulos" }
+  - id: newtral
+    name: "Newtral"
+    leaning: centro  # nota: verificacion de datos / fact-checking
+    homepage: https://www.newtral.es
+    region: nacional
+    kind: verificacion
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.newtral.es/feed/", section: "portada" }
+      - { url: "https://www.newtral.es/zona-verificacion/feed/", section: "verificación" }
+  - id: marca
+    name: "Marca"
+    leaning: centro  # nota: DEPORTES: seccion deportiva; filtrala en la UI si no quieres deporte
+    homepage: https://www.marca.com
+    region: nacional
+    kind: prensa
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["#didomi-notice-agree-button", "button.fc-cta-consent"]
+    feeds:
+      - { url: "https://e00-marca.uecdn.es/rss/portada.xml", section: "deportes" }
+  - id: as
+    name: "AS"
+    leaning: centro  # nota: DEPORTES: seccion deportiva; filtrala en la UI si no quieres deporte
+    homepage: https://as.com
+    region: nacional
+    kind: prensa
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://feeds.as.com/mrss-s/pages/as/site/as.com/portada", section: "deportes" }
+      - { url: "https://feeds.as.com/mrss-s/pages/as/site/as.com/section/futbol/portada", section: "fútbol" }
+  - id: heraldo
+    name: "Heraldo de Aragón"
+    leaning: centro
+    homepage: https://www.heraldo.es
+    region: "aragón"
+    kind: prensa
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.heraldo.es/rss/", section: "portada" }
+      - { url: "https://www.heraldo.es/rss/nacional.xml", section: "nacional" }
+      - { url: "https://www.heraldo.es/rss/economia.xml", section: "economía" }
+  - id: elcorreo
+    name: "El Correo"
+    leaning: centro-derecha
+    homepage: https://www.elcorreo.com
+    region: "país vasco"
+    kind: prensa
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["button.fc-cta-consent"]
+    feeds:
+      - { url: "https://www.elcorreo.com/rss/2.0/portada", section: "portada" }
+  - id: diariovasco
+    name: "El Diario Vasco"
+    leaning: centro-derecha
+    homepage: https://www.diariovasco.com
+    region: "país vasco"
+    kind: prensa
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["button.fc-cta-consent"]
+    feeds:
+      - { url: "https://www.diariovasco.com/rss/2.0/portada", section: "portada" }
+  - id: lasprovincias
+    name: "Las Provincias"
+    leaning: centro-derecha
+    homepage: https://www.lasprovincias.es
+    region: "comunitat valenciana"
+    kind: prensa
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["button.fc-cta-consent"]
+    feeds:
+      - { url: "https://www.lasprovincias.es/rss/2.0/portada", section: "portada" }
+  - id: diariosur
+    name: "Diario Sur"
+    leaning: centro-derecha
+    homepage: https://www.diariosur.es
+    region: "andalucía"
+    kind: prensa
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["button.fc-cta-consent"]
+    feeds:
+      - { url: "https://www.diariosur.es/rss/2.0/portada", section: "portada" }
+  - id: elnortedecastilla
+    name: "El Norte de Castilla"
+    leaning: centro-derecha
+    homepage: https://www.elnortedecastilla.es
+    region: "castilla y león"
+    kind: prensa
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["button.fc-cta-consent"]
+    feeds:
+      - { url: "https://www.elnortedecastilla.es/rss/2.0/portada", section: "portada" }
+  - id: diariodesevilla
+    name: "Diario de Sevilla"
+    leaning: centro
+    homepage: https://www.diariodesevilla.es
+    region: "andalucía"
+    kind: prensa
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.diariodesevilla.es/rss/", section: "portada" }
+  - id: canarias7
+    name: "Canarias7"
+    leaning: centro
+    homepage: https://www.canarias7.es
+    region: canarias
+    kind: prensa
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["button.fc-cta-consent"]
+    feeds:
+      - { url: "https://www.canarias7.es/rss/2.0/portada", section: "portada" }
+  - id: ara
+    name: "Ara"
+    leaning: centro-izquierda  # nota: en catalan
+    homepage: https://www.ara.cat
+    region: "cataluña"
+    kind: prensa
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.ara.cat/rss/", section: "portada" }
+  - id: elnacionalcat
+    name: "El Nacional.cat"
+    leaning: centro-izquierda  # nota: edicion en castellano
+    homepage: https://www.elnacional.cat
+    region: "cataluña"
+    kind: digital
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.elnacional.cat/uploads/feeds/feed_es.xml", section: "portada" }
+  - id: vilaweb
+    name: "VilaWeb"
+    leaning: centro-izquierda  # nota: en catalan
+    homepage: https://www.vilaweb.cat
+    region: "cataluña"
+    kind: digital
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.vilaweb.cat/feed/", section: "portada" }
+  - id: cronicaglobal
+    name: "Crónica Global"
+    leaning: centro-derecha
+    homepage: https://www.cronicaglobal.com
+    region: "cataluña"
+    kind: digital
+    full_text: true
+    screenshot: false
+    cookie_selectors: []
+    feeds:
+      - { url: "https://www.cronicaglobal.com/rss", section: "portada" }
+  - id: naiz
+    name: "Naiz"
+    leaning: izquierda  # nota: edicion en castellano
+    homepage: https://www.naiz.eus
+    region: "país vasco"
+    kind: digital
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.naiz.eus/es/rss/news.rss", section: "portada" }
+  - id: diariodenavarra
+    name: "Diario de Navarra"
+    leaning: centro-derecha
+    homepage: https://www.diariodenavarra.es
+    region: navarra
+    kind: prensa
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.diariodenavarra.es/rss/contenidos.xml", section: "portada" }
+  - id: telemadrid
+    name: "Telemadrid"
+    leaning: centro-derecha  # nota: televisión autonómica pública
+    homepage: https://www.telemadrid.es
+    region: madrid
+    kind: tv
+    full_text: true
+    screenshot: false
+    cookie_selectors: ["#didomi-notice-agree-button"]
+    feeds:
+      - { url: "https://www.telemadrid.es/rss/", section: "portada" }
 
-# Fallaron la verificacion (no incluidos), desde este sandbox:
-#  - Publico: https://www.publico.es/rss/, /rss/politica, /feed, /rss.xml -> 404
-#  - La Razon: https://www.larazon.es/rss/portada.xml -> 503 (bloqueo anti-bot); /feed/, /espana/rss.xml -> 404
-#  - Cadena SER: https://cadenaser.com/rss/, /rss-ser/, feedburner -> 404
-#  - RTVE: /api/noticias.rss, /rss/noticias.xml -> 404; /rss/temas_noticias.xml responde pero contenido de 2022 (obsoleto)
-#  - Vozpopuli: /rss/, /feed, /rss.xml -> 404/403
-#  - El Economista: 403; La Sexta: 400/0 items; El Plural: 404/0 items
+# Fallaron la verificacion (no incluidos), desde este sandbox, con el UA honesto:
+#  - Publico: /rss, /rss/politica, /feed, /rss.xml, ?outputType=xml -> 404 o HTML (sin feed publico descubrible)
+#  - Cadena SER: homepage 403; /rss/, /feed/, /rss.xml, feedburner -> 404
+#  - RTVE: /api/noticias.rss, /rss/ -> 404/HTML; api2.rtve.es/rss/temas_noticias.xml responde pero con contenido de 2022 (obsoleto); /rss/temas_*.xml -> 403
+#  - Vozpopuli: <link rel=alternate> apunta a /portada.xml, /rss, /feed -> 403/404 (anti-bot)
+#  - El Economista, EFE: 403 (anti-bot) en feeds y homepage
+#  - esRadio: no resuelve/tunel 000; Nius: no resuelve (000); esdiario /rss: 410
+#  - CTXT: /rss, /feed, ?tpl=rss -> 404 o HTML (sin RSS publico)
+#  - La Voz de Galicia: /rss/ solo es una pagina HTML indice (sin feeds XML validos descubribles)
+#  - Solo con UA de navegador (406 con el UA honesto y con curl; NO se suplanta): El Periodico
+#    (feeds existentes, fuente desactivada), Faro de Vigo, Levante-EMV, Diario de Mallorca, Deia, La Opinion de Malaga, La Nueva Espana
+#  - La Razon /rss/*.xml -> 503; se usa el feed Arc ?outputType=xml que si responde
+#  - Otros: Telecinco /rss/ 404 (se usa /rss.xml); Onda Cero otros ids 404; ccma.cat/rss 0 items; as.com tags/ultimas_noticias 0 items
+#  - Expansión /rss/portada.xml obsoleto (ultimo item de hace 7 dias); se usa /rss/economia.xml
 #  - Feeds sueltos descartados: elconfidencial /portada/ (0 items), elespanol /rss/economia/ (404),
-#    libertaddigital /rss/espana.xml (404), theobjective /economia/feed/ (0 items)
+#    libertaddigital /rss/espana.xml (404), theobjective /economia/feed/ (0 items),
+#    antena3 348689 y laSexta 351435/351437 (0 items), laSexta 351439 (obsoleto, 97 dias),
+#    Europa Press ch=72 (obsoleto, 9 dias)

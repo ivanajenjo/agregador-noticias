@@ -1,0 +1,86 @@
+{{define "content"}}
+<h1>Tendencias</h1>
+<p class="lead-sm">Qué está pasando y quién lo cuenta: historias cubiertas por varios medios y términos que aparecen más de lo habitual. Se calcula con el texto de los titulares, sin IA.</p>
+<div id="tend" aria-live="polite">{{template "trends_body" .}}</div>
+{{end}}
+
+{{define "trends_body"}}
+<nav class="tabs" aria-label="Vista">
+ <a class="chip{{if eq .Vista "historias"}} on{{end}}" href="{{.TabStory}}" hx-get="{{.TabStory}}" hx-target="#tend" hx-push-url="true"{{if eq .Vista "historias"}} aria-current="page"{{end}}>Historias destacadas</a>
+ <a class="chip{{if eq .Vista "terminos"}} on{{end}}" href="{{.TabTerms}}" hx-get="{{.TabTerms}}" hx-target="#tend" hx-push-url="true"{{if eq .Vista "terminos"}} aria-current="page"{{end}}>Términos en alza</a>
+</nav>
+<div class="tbar">
+ <nav class="seg" aria-label="Ventana de tiempo"><span class="muted small">Últimas</span>
+  {{range .Ventanas}}<a class="chip sm{{if .On}} on{{end}}" href="{{.URL}}" hx-get="{{.URL}}" hx-target="#tend" hx-push-url="true"{{if .On}} aria-current="true"{{end}}>{{.Label}}</a>{{end}}
+ </nav>
+</div>
+{{if .Sources}}
+<form class="tfilter" action="/tendencias" method="get" hx-get="/tendencias" hx-target="#tend" hx-push-url="true">
+ <input type="hidden" name="vista" value="{{.Vista}}"><input type="hidden" name="ventana" value="{{.Ventana}}">
+ <details class="filters"{{if .Fuentes}} open{{end}}>
+  <summary>Medios{{if .Fuentes}} <span class="count">{{.Fuentes}}</span>{{end}}</summary>
+  <div class="fgrid">
+   <fieldset><legend class="sr">Medios</legend>
+    {{range .Sources}}<label class="chk"><input type="checkbox" name="fuentes" value="{{.ID}}"{{if .Checked}} checked{{end}}> <span>{{.Name}}</span></label>{{end}}
+   </fieldset>
+  </div>
+  <button type="submit">Aplicar</button>
+ </details>
+</form>
+{{end}}
+
+{{if .Err}}<p class="notice err" role="alert">{{.Err}}</p>
+{{else if eq .Vista "historias"}}
+ {{if not .Stories}}
+  <p class="empty">Aún no hay suficientes datos: necesito al menos unos días de noticias de varios medios para detectar historias que varios cubran a la vez. Prueba con una ventana más amplia o vuelve más tarde.</p>
+ {{else}}
+ <ol class="stories">
+ {{range .Stories}}
+  <li class="story">
+   <h2 class="stitle">{{.Title}}</h2>
+   <div class="meta sbadges">
+    <span class="badge">{{.Sources}} medios</span>
+    <span class="badge">{{.Articles}} artículos</span>
+    {{if .FirstName}}<span>primera: <strong>{{.FirstName}}</strong> <time datetime="{{datetime .FirstAt}}">{{ago .FirstAt}}</time></span>{{end}}
+   </div>
+   <div class="lean">{{leanBar .Leanings}}<div class="cap muted small">{{leanCap .Leanings}}</div></div>
+   <ul class="outlets">
+   {{range .Outlets}}
+    <li>
+     <div class="oname"><strong>{{.Name}}</strong>{{if .Leaning}} <span class="badge {{leanClass .Leaning}}">{{.Leaning}}</span>{{end}}{{if .First}} <span class="badge first">primero</span>{{end}}</div>
+     <div class="oheads">{{range .Headlines}}<a class="ohead" href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.Title}}</a>{{end}}{{if .More}}<span class="muted small">y {{.More}} más</span>{{end}}</div>
+    </li>
+   {{end}}
+   </ul>
+   {{if .MissingTxt}}<p class="muted small missing">No lo cubren: {{.MissingTxt}}</p>{{end}}
+   <div class="sactions">
+    <a class="btn" href="{{.CompareURL}}">Comparar enfoques</a>
+    {{range .TermLinks}}<a class="btn ghost" href="{{.URL}}">{{.Text}}</a>{{end}}
+   </div>
+  </li>
+ {{end}}
+ </ol>
+ {{end}}
+{{else}}
+ {{if not .Terms}}
+  <p class="empty">Aún no hay suficientes datos: necesito al menos unos días de noticias para saber qué términos son inusuales frente a lo normal. Cuando haya historial, aquí verás las palabras que más suben.</p>
+ {{else}}
+ <table class="rtable terms">
+  <thead><tr><th>Término</th><th>Artículos</th><th>Medios</th><th>Evolución (14 días)</th><th>Línea editorial</th><th>Visto desde</th></tr></thead>
+  <tbody>
+  {{range .Terms}}
+   <tr>
+    <td data-label="Término"><span class="v"><a class="atitle tname" href="{{.URL}}">{{.Term}}</a>{{if .New}} <span class="badge new">nuevo</span>{{end}}</span></td>
+    <td data-label="Artículos">{{.Count}}</td>
+    <td data-label="Medios">{{.Sources}}</td>
+    <td data-label="Evolución" class="sparkc">{{spark .Spark}}</td>
+    <td data-label="Línea" class="leanc">{{leanBar .Leanings}}</td>
+    <td data-label="Visto desde">{{if isZero .FirstAt}}—{{else}}<time datetime="{{datetime .FirstAt}}">{{ago .FirstAt}}</time>{{end}}</td>
+   </tr>
+  {{end}}
+  </tbody>
+ </table>
+ {{end}}
+{{end}}
+{{if not .Err}}<p class="muted small">Calculado a las {{clock .Generated}}{{if .Articles}} · {{num .Articles}} artículos analizados en las últimas {{.WindowLbl}}{{end}}{{if .BaseDays}} · comparado con los {{.BaseDays}} días anteriores{{end}}.</p>{{end}}
+{{end}}

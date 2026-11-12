@@ -158,6 +158,7 @@
     var chat = $("#chat"), ta = $("#question"), btn = $("#ask-btn"), busy = false;
     function autosize() { ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight, window.innerHeight * 0.4) + "px"; }
     ta.addEventListener("input", autosize);
+    if (ta.value) autosize();
     ta.addEventListener("keydown", function (e) {
       if (e.key === "Enter" && (e.ctrlKey || e.metaKey || (!e.shiftKey && window.matchMedia("(min-width:700px)").matches))) {
         e.preventDefault(); form.requestSubmit();

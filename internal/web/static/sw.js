@@ -1,6 +1,6 @@
 /* Minimal service worker: caches the static shell and an offline page.
    Never touches /api, /shots or htmx fragments. */
-const CACHE = "agregador-shell-v1";
+const CACHE = "agregador-shell-v2";
 const SHELL = ["/offline", "/static/app.css", "/static/app.js", "/static/htmx.min.js", "/static/icon.svg"];
 
 self.addEventListener("install", (e) => {

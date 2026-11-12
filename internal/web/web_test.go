@@ -167,7 +167,7 @@ func fixture(t *testing.T) (*fakeStore, *fakeRetriever, string) {
 func newHandler(t *testing.T, mod func(*Deps, *Options)) (http.Handler, *fakeStore, *fakeRetriever, string) {
 	st, ret, dir := fixture(t)
 	d := Deps{Store: st, Retriever: ret, Ingestor: &blockingJob{make(chan struct{}, 1), make(chan struct{})},
-		Shots: &fakeShots{blockingJob{make(chan struct{}, 1), make(chan struct{})}}, LLM: fakeLLM{ok: true}, ShotsDir: dir,
+		Shots: &fakeShots{blockingJob{make(chan struct{}, 1), make(chan struct{})}}, LLM: fakeLLM{ok: true}, Trends: newFakeTrends(), ShotsDir: dir,
 		Log: slog.New(slog.NewTextHandler(io.Discard, nil))}
 	o := Options{Location: madrid, Version: "test", EmbedModel: "m"}
 	if mod != nil {
@@ -189,7 +189,8 @@ func do(h http.Handler, method, target string, hdr map[string]string, body strin
 // ---- tests ----
 
 var allPages = []string{"/", "/fragmentos/portada", "/buscar", "/buscar?q=algo", "/preguntar", "/capturas", "/capturas?mode=compare",
-	"/estado", "/fragmentos/estado", "/articulo/1", "/offline"}
+	"/estado", "/fragmentos/estado", "/articulo/1", "/offline",
+	"/tendencias", "/tendencias?vista=terminos&ventana=7d", "/tendencias/termino/vivienda"}
 
 func TestPagesRenderPopulated(t *testing.T) {
 	h, _, _, _ := newHandler(t, nil)
@@ -220,10 +221,10 @@ func (emptyStore) Stats(context.Context, string) (*domain.Stats, error)        {
 func (emptyStore) GetArticle(context.Context, int64) (*domain.Article, error)  { return nil, nil }
 
 func TestPagesRenderEmpty(t *testing.T) {
-	h := New(Deps{Store: emptyStore{}, ShotsDir: t.TempDir()}, Options{})
+	h := New(Deps{Store: emptyStore{}, Trends: &fakeTrends{}, ShotsDir: t.TempDir()}, Options{})
 	for _, p := range allPages {
 		want := 200
-		if strings.HasPrefix(p, "/articulo") {
+		if strings.HasPrefix(p, "/articulo") || strings.HasPrefix(p, "/tendencias/termino") {
 			want = 404
 		}
 		if rec := do(h, "GET", p, nil, ""); rec.Code != want {

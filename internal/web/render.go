@@ -18,6 +18,7 @@ type pageData struct {
 	Title   string
 	Nav     string
 	Version string
+	Trends  bool
 	V       any
 }
 
@@ -26,7 +27,7 @@ type errorView struct {
 	Msg  string
 }
 
-var pages = []string{"home", "search", "ask", "shots", "status", "article", "error", "offline"}
+var pages = []string{"home", "search", "ask", "shots", "status", "article", "error", "offline", "trends", "trend_term"}
 
 func (s *server) parseTemplates() map[string]*template.Template {
 	funcs := template.FuncMap{
@@ -43,6 +44,9 @@ func (s *server) parseTemplates() map[string]*template.Template {
 		"score":     func(f float64) string { return fmt.Sprintf("%.3f", f) },
 		"num":       humanInt,
 		"add":       func(a, b int) int { return a + b },
+		"leanBar":   leanBarSVG,
+		"leanCap":   leanCaption,
+		"spark":     sparkSVG,
 	}
 	out := map[string]*template.Template{}
 	for _, p := range pages {
@@ -56,7 +60,7 @@ func (s *server) parseTemplates() map[string]*template.Template {
 func (s *server) render(w http.ResponseWriter, r *http.Request, code int, page, title, nav string, v any) {
 	t := s.tpl[page]
 	var buf bytes.Buffer
-	if err := t.ExecuteTemplate(&buf, "base", pageData{Title: title, Nav: nav, Version: s.o.Version, V: v}); err != nil {
+	if err := t.ExecuteTemplate(&buf, "base", pageData{Title: title, Nav: nav, Version: s.o.Version, Trends: s.d.Trends != nil, V: v}); err != nil {
 		s.log.Error("template", "page", page, "err", err)
 		http.Error(w, "Error interno", http.StatusInternalServerError)
 		return

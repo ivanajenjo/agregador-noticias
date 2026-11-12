@@ -22,11 +22,12 @@ func TestSourcesYAML(t *testing.T) {
 	if err := yaml.Unmarshal(raw, &cfg); err != nil {
 		t.Fatal(err)
 	}
-	if len(cfg.Sources) < 12 {
-		t.Fatalf("only %d sources, want >= 12", len(cfg.Sources))
+	if len(cfg.Sources) < 30 {
+		t.Fatalf("only %d sources, want >= 30", len(cfg.Sources))
 	}
 	slug := regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 	leanings := map[string]bool{"izquierda": true, "centro-izquierda": true, "centro": true, "centro-derecha": true, "derecha": true}
+	kinds := map[string]bool{"": true, "prensa": true, "radio": true, "tv": true, "agencia": true, "digital": true, "verificacion": true}
 	ids, feeds := map[string]bool{}, map[string]bool{}
 	for _, s := range cfg.Sources {
 		if !slug.MatchString(s.ID) {
@@ -38,6 +39,9 @@ func TestSourcesYAML(t *testing.T) {
 		ids[s.ID] = true
 		if s.Name == "" || !leanings[s.Leaning] {
 			t.Errorf("%s: bad name/leaning (%q, %q)", s.ID, s.Name, s.Leaning)
+		}
+		if !kinds[s.Kind] {
+			t.Errorf("%s: invalid kind %q", s.ID, s.Kind)
 		}
 		if u, err := url.Parse(s.Homepage); err != nil || u.Scheme != "https" || u.Host == "" {
 			t.Errorf("%s: bad homepage %q", s.ID, s.Homepage)
@@ -54,6 +58,9 @@ func TestSourcesYAML(t *testing.T) {
 				t.Errorf("duplicate feed URL %q", f.URL)
 			}
 			feeds[f.URL] = true
+			if f.Section == "" {
+				t.Errorf("%s: feed %q has no section", s.ID, f.URL)
+			}
 		}
 	}
 }

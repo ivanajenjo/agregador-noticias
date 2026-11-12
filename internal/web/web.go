@@ -32,6 +32,7 @@ type Deps struct {
 	Ingestor  domain.Ingestor
 	Shots     domain.ShotTaker
 	LLM       domain.StatusProvider // may be nil
+	Trends    domain.TrendProvider  // may be nil: Tendencias hidden, routes answer 503
 	ShotsDir  string                // served read-only at /shots/
 	Log       *slog.Logger
 }
@@ -81,6 +82,8 @@ func New(deps Deps, opts Options) http.Handler {
 	mux.HandleFunc("GET /buscar", s.pageSearch)
 	mux.HandleFunc("GET /preguntar", s.pageAsk)
 	mux.HandleFunc("GET /capturas", s.pageShots)
+	mux.HandleFunc("GET /tendencias", s.pageTrends)
+	mux.HandleFunc("GET /tendencias/termino/{key}", s.pageTerm)
 	mux.HandleFunc("GET /estado", s.pageStatus)
 	mux.HandleFunc("GET /fragmentos/estado", s.fragStatus)
 	mux.HandleFunc("GET /articulo/{id}", s.pageArticle)
@@ -89,6 +92,9 @@ func New(deps Deps, opts Options) http.Handler {
 	mux.HandleFunc("GET /api/articles", s.apiArticles)
 	mux.HandleFunc("GET /api/search", s.apiSearch)
 	mux.HandleFunc("GET /api/screenshots", s.apiScreenshots)
+	mux.HandleFunc("GET /api/trends", s.apiTrends)
+	mux.HandleFunc("GET /api/trends/term", s.apiTrendTerm)
+	mux.HandleFunc("GET /api/stories", s.apiStories)
 	mux.HandleFunc("POST /api/ask", s.apiAsk)
 	mux.HandleFunc("POST /api/jobs/ingest", s.apiJob("ingest"))
 	mux.HandleFunc("POST /api/jobs/screenshots", s.apiJob("screenshots"))

@@ -13,6 +13,8 @@ type Source struct {
 	Name            string   `yaml:"name"`    // display name
 	Leaning         string   `yaml:"leaning"` // user-editable label, e.g. "centro-izquierda"
 	Homepage        string   `yaml:"homepage"`
+	Region          string   `yaml:"region"` // optional: "nacional", "cataluña", "aragón"...
+	Kind            string   `yaml:"kind"`   // optional: prensa|radio|tv|agencia|digital|verificacion
 	Feeds           []Feed   `yaml:"feeds"`
 	FullText        bool     `yaml:"full_text"`        // fetch article page + readability when feed lacks body
 	Screenshot      bool     `yaml:"screenshot"`       // take front-page screenshots

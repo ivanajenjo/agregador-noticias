@@ -1,0 +1,53 @@
+{{define "content"}}
+<p class="back"><a href="{{.BackURL}}">← Tendencias</a></p>
+<h1>{{.Term}}</h1>
+<p class="lead-sm">{{.Total}} {{if eq .Total 1}}artículo{{else}}artículos{{end}} en los últimos {{.Days}} días{{if .Coverage}} · {{len .Coverage}} medios lo han cubierto{{end}}.</p>
+<nav class="tabs" aria-label="Periodo">
+ <span class="muted small">Periodo</span>
+ {{range .DayOpts}}<a class="chip sm{{if .On}} on{{end}}" href="{{.URL}}"{{if .On}} aria-current="true"{{end}}>{{.Days}} días</a>{{end}}
+ <span class="push"><a class="btn" href="{{.CompareURL}}">Comparar enfoques</a></span>
+</nav>
+
+<section aria-labelledby="h-day">
+ <h2 id="h-day">Artículos por día</h2>
+ {{if .Chart}}
+ <div class="chartbox">{{.Chart}}
+  <ul class="legend small muted" aria-hidden="true">
+   <li><i class="sw b0"></i>Izquierda</li><li><i class="sw b1"></i>Centro-izq.</li><li><i class="sw b2"></i>Centro</li><li><i class="sw b3"></i>Centro-der.</li><li><i class="sw b4"></i>Derecha</li>
+  </ul>
+ </div>
+ <details class="datatbl"><summary class="small">Ver datos en tabla</summary>
+  <table class="rtable small"><thead><tr><th>Día</th><th>Artículos</th></tr></thead><tbody>
+  {{range .Daily}}<tr><td data-label="Día">{{.Day.Format "02/01"}}</td><td data-label="Artículos">{{.Total}}</td></tr>{{end}}
+  </tbody></table>
+ </details>
+ {{else}}<p class="muted">Sin datos diarios.</p>{{end}}
+</section>
+
+<section aria-labelledby="h-cov">
+ <h2 id="h-cov">Quién lo cuenta (el primero, arriba)</h2>
+ {{if .Rows}}
+ <table class="rtable cover">
+  <thead><tr><th>Medio</th><th>Primer artículo</th><th>Artículos</th><th>Titulares</th></tr></thead>
+  <tbody>
+  {{range .Rows}}
+   <tr>
+    <td data-label="Medio"><span class="v"><strong>{{.Name}}</strong>{{if .Leaning}} <span class="badge {{leanClass .Leaning}}">{{.Leaning}}</span>{{end}}{{if .First}} <span class="badge first">primero</span>{{end}}</span></td>
+    <td data-label="Primer artículo"><span class="v">{{if isZero .FirstAt}}—{{else}}<time datetime="{{datetime .FirstAt}}">{{fulltime .FirstAt}}</time>{{end}}{{if .Lag}} <span class="muted small">({{.Lag}})</span>{{end}}</span></td>
+    <td data-label="Artículos">{{.Count}}</td>
+    <td class="heads">{{range .Headlines}}<a class="ohead" href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.Title}}</a>{{end}}{{if .More}}<span class="muted small">y {{.More}} más</span>{{end}}</td>
+   </tr>
+  {{end}}
+  </tbody>
+ </table>
+ {{else}}<p class="muted">Ningún medio lo ha cubierto en este periodo.</p>{{end}}
+</section>
+
+{{if .MissingTxt}}<section><h2>No lo han cubierto</h2><p class="muted">{{.MissingTxt}}</p></section>{{end}}
+
+{{if .Related}}<section aria-labelledby="h-rel">
+ <h2 id="h-rel">Términos relacionados</h2>
+ <p class="sactions">{{range .Related}}<a class="chip" href="{{.URL}}">{{.Text}}</a>{{end}}</p>
+</section>{{end}}
+<p class="muted small">Calculado a las {{clock .Generated}}.</p>
+{{end}}

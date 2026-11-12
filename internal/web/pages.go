@@ -294,11 +294,15 @@ type askView struct {
 	Available bool
 	LLMDown   bool
 	Detail    string
+	Q         string
+	Compare   bool
 }
 
 func (s *server) pageAsk(w http.ResponseWriter, r *http.Request) {
 	_, form := s.parseFilter(r.URL.Query())
-	v := askView{Filter: s.filterView(r.Context(), form), Available: s.d.Retriever != nil}
+	cmp := r.URL.Query().Get("comparar")
+	v := askView{Filter: s.filterView(r.Context(), form), Available: s.d.Retriever != nil, Q: form.Q,
+		Compare: cmp == "1" || cmp == "true" || cmp == "on"}
 	if s.d.LLM != nil {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
