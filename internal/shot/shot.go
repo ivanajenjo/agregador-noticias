@@ -17,9 +17,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chromedp/cdproto/emulation"
+	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
+	"github.com/chromedp/chromedp/remote"
 	"github.com/ivanajenjo/agregador-noticias/internal/domain"
 )
 
@@ -115,7 +116,7 @@ func (t *Taker) noSandbox() bool {
 
 func (t *Taker) allocator(ctx context.Context) (context.Context, context.CancelFunc, error) {
 	if t.opts.RemoteURL != "" {
-		c, cancel := chromedp.NewRemoteAllocator(ctx, t.opts.RemoteURL)
+		c, cancel := remote.NewAllocator(ctx, t.opts.RemoteURL)
 		return c, cancel, nil
 	}
 	path := t.opts.ChromePath
@@ -172,14 +173,13 @@ func (t *Taker) RunOnce(ctx context.Context) (int, error) {
 	}
 	defer allocCancel()
 	browserCtx, browserCancel := chromedp.NewContext(allocCtx)
-	defer func() {
-		browserCancel()
-		// Wait for the browser process to exit (killed on cancel).
-		_ = chromedp.Cancel(browserCtx)
-	}()
-	startCtx, startCancel := context.WithTimeout(browserCtx, 30*time.Second)
-	err = chromedp.Run(startCtx)
-	startCancel()
+	// Cancelling the contexts kills the local browser process (and, with the
+	// exec allocator, waits for it); a remote browser is only disconnected.
+	defer browserCancel()
+	// The first Run starts the browser; it must not carry a timeout.
+	stopStart := context.AfterFunc(ctx, browserCancel)
+	err = chromedp.Do(browserCtx)
+	stopStart()
 	if err != nil {
 		return 0, fmt.Errorf("start browser: %w", err)
 	}
@@ -206,57 +206,29 @@ func (t *Taker) RunOnce(ctx context.Context) (int, error) {
 
 func (t *Taker) captureSource(ctx, browserCtx context.Context, s domain.Source) error {
 	tabCtx, tabCancel := chromedp.NewContext(browserCtx)
-	defer tabCancel()
+	defer tabCancel() // closes the tab
+	if err := chromedp.Do(tabCtx); err != nil {
+		return fmt.Errorf("open tab: %w", err)
+	}
 	tctx, cancel := context.WithTimeout(tabCtx, t.opts.PageTimeout)
 	defer cancel()
 	stop := context.AfterFunc(ctx, cancel)
 	defer stop()
-	defer func() {
-		// close the target explicitly so the tab does not linger
-		c, cc := context.WithTimeout(context.WithoutCancel(tabCtx), 5*time.Second)
-		defer cc()
-		_ = chromedp.Run(c, page.Close())
-	}()
 
 	o := t.opts
-	if err := chromedp.Run(tctx,
-		emulation.SetDeviceMetricsOverride(int64(o.Width), int64(o.Height), 1, false),
+	if err := chromedp.Do(tctx,
+		chromedp.EmulateViewport(int64(o.Width), int64(o.Height)),
 		chromedp.Navigate(s.Homepage),
+		chromedp.Sleep(o.SettleDelay),
 	); err != nil {
 		return fmt.Errorf("navigate: %w", err)
-	}
-	if err := chromedp.Run(tctx, chromedp.Sleep(o.SettleDelay)); err != nil {
-		return err
 	}
 
 	t.dismissCookies(tctx, s)
 	t.hideOverlays(tctx)
 	t.scrollThrough(tctx)
 
-	var buf []byte
-	var w, h int
-	err := chromedp.Run(tctx, chromedp.ActionFunc(func(c context.Context) error {
-		_, _, _, _, _, cs, err := page.GetLayoutMetrics().Do(c)
-		if err != nil {
-			return err
-		}
-		w = o.Width
-		h = int(math.Ceil(cs.Height))
-		if h < o.Height {
-			h = o.Height
-		}
-		if h > o.MaxHeight {
-			h = o.MaxHeight
-		}
-		buf, err = page.CaptureScreenshot().
-			WithFormat(page.CaptureScreenshotFormatJpeg).
-			WithQuality(int64(o.Quality)).
-			WithCaptureBeyondViewport(true).
-			WithFromSurface(true).
-			WithClip(&page.Viewport{X: 0, Y: 0, Width: float64(w), Height: float64(h), Scale: 1}).
-			Do(c)
-		return err
-	}))
+	buf, w, h, err := t.capture(tctx)
 	if err != nil {
 		return fmt.Errorf("capture: %w", err)
 	}
@@ -264,6 +236,39 @@ func (t *Taker) captureSource(ctx, browserCtx context.Context, s domain.Source) 
 		return errors.New("empty screenshot")
 	}
 	return t.store(ctx, s, buf, w, h)
+}
+
+// capture takes a JPEG of the full content (capped by MaxHeight).
+func (t *Taker) capture(ctx context.Context) (buf []byte, w, h int, err error) {
+	o := t.opts
+	m, err := chromedp.Call(ctx, page.GetLayoutMetrics, cdp.Empty{})
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	w = o.Width
+	h = o.Height
+	if m.CSSContentSize != nil {
+		h = int(math.Ceil(m.CSSContentSize.Height))
+	}
+	if h < o.Height {
+		h = o.Height
+	}
+	if h > o.MaxHeight {
+		h = o.MaxHeight
+	}
+	q := int64(o.Quality)
+	yes := true
+	r, err := chromedp.Call(ctx, page.CaptureScreenshot, page.CaptureScreenshotParams{
+		Format:                page.CaptureScreenshotFormatJpeg,
+		Quality:               &q,
+		CaptureBeyondViewport: &yes,
+		FromSurface:           &yes,
+		Clip:                  &page.Viewport{X: 0, Y: 0, Width: float64(w), Height: float64(h), Scale: 1},
+	})
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	return r.Data, w, h, nil
 }
 
 func (t *Taker) store(ctx context.Context, s domain.Source, data []byte, w, h int) error {

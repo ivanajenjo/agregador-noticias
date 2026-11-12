@@ -3,6 +3,7 @@ package shot
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/chromedp/chromedp"
@@ -98,41 +99,39 @@ func (t *Taker) dismissCookies(ctx context.Context, s domain.Source) {
 			return ""
 		}
 		b, _ := json.Marshal(sels)
-		var clicked string
-		if err := chromedp.Run(ctx, chromedp.Evaluate(sprintf(clickFirstJS, string(b)), &clicked)); err != nil {
+		clicked, err := chromedp.Run(ctx, chromedp.Evaluate[string](fmt.Sprintf(clickFirstJS, string(b))))
+		if err != nil {
 			t.log.Debug("cookie selector eval failed", "source", s.ID, "err", err)
 		}
 		return clicked
 	}
+	settle := func() { _ = chromedp.Do(ctx, chromedp.Sleep(700*time.Millisecond)) }
 	if c := try(s.CookieSelectors); c != "" {
 		t.log.Debug("cookie banner dismissed (configured selector)", "source", s.ID, "selector", c)
-		_ = chromedp.Run(ctx, chromedp.Sleep(700*time.Millisecond))
+		settle()
 		return
 	}
 	if c := try(genericConsentSelectors); c != "" {
 		t.log.Debug("cookie banner dismissed (CMP selector)", "source", s.ID, "selector", c)
-		_ = chromedp.Run(ctx, chromedp.Sleep(700*time.Millisecond))
+		settle()
 		return
 	}
-	var txt string
-	if err := chromedp.Run(ctx, chromedp.Evaluate(heuristicJS, &txt)); err == nil && txt != "" {
+	if txt, err := chromedp.Run(ctx, chromedp.Evaluate[string](heuristicJS)); err == nil && txt != "" {
 		t.log.Debug("cookie banner dismissed (text heuristic)", "source", s.ID, "button", txt)
-		_ = chromedp.Run(ctx, chromedp.Sleep(700*time.Millisecond))
+		settle()
 		return
 	}
 	t.log.Warn("could not dismiss cookie banner (continuing)", "source", s.ID)
 }
 
 func (t *Taker) hideOverlays(ctx context.Context) {
-	var n int
-	if err := chromedp.Run(ctx, chromedp.Evaluate(hideOverlaysJS, &n)); err != nil {
+	if _, err := chromedp.Run(ctx, chromedp.Evaluate[int](hideOverlaysJS)); err != nil {
 		t.log.Debug("hide overlays failed", "err", err)
 	}
 }
 
 func (t *Taker) scrollThrough(ctx context.Context) {
-	var ok bool
-	err := chromedp.Run(ctx, chromedp.Evaluate(sprintf(scrollJS, t.opts.MaxHeight), &ok, awaitPromise))
+	_, err := chromedp.Run(ctx, chromedp.Evaluate[bool](fmt.Sprintf(scrollJS, t.opts.MaxHeight), chromedp.EvalAwaitPromise))
 	if err != nil {
 		t.log.Debug("scroll failed", "err", err)
 	}

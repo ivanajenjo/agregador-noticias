@@ -115,6 +115,20 @@ CREATE TABLE job_runs (
 );
 CREATE INDEX idx_jobs_started ON job_runs (started_at DESC);
 `,
+	// 2: article annotations (bias/intent/tone labels from small models)
+	`
+CREATE TABLE article_annotations (
+  article_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  model TEXT NOT NULL,
+  label TEXT NOT NULL DEFAULT '',
+  score REAL NOT NULL DEFAULT 0,
+  data TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (article_id, kind, model)
+) WITHOUT ROWID;
+CREATE INDEX idx_annotations_kind_label ON article_annotations (kind, model, label);
+`,
 }
 
 func migrate(ctx context.Context, db *sql.DB) error {

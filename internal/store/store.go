@@ -113,3 +113,5 @@ func (s *SQLite) tx(ctx context.Context, fn func(*sql.Tx) error) error {
 	}
 	return tx.Commit()
 }
+
+var _ domain.AnnotationStore = (*SQLite)(nil)
