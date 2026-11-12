@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -28,6 +29,7 @@ type Scheduler struct {
 	mu   sync.Mutex
 	busy map[string]bool
 	wg   sync.WaitGroup
+	beat atomic.Int64 // unix nanoseconds of the last heartbeat (see LastBeat)
 }
 
 func New(ctx context.Context, st domain.Store, loc *time.Location, log *slog.Logger) *Scheduler {
@@ -96,10 +98,27 @@ func (s *Scheduler) run(j Job) {
 	_ = s.st.FinishJob(fctx, id, ok, msg)
 }
 
-func (s *Scheduler) Start() { s.c.Start() }
+func (s *Scheduler) Start() {
+	// The heartbeat is a cron entry itself, so it only ticks while the cron
+	// loop is alive: /readyz uses it (domain.Heartbeat) to detect a dead scheduler.
+	_, _ = s.c.AddFunc("@every 30s", func() { s.beat.Store(time.Now().UnixNano()) })
+	s.beat.Store(time.Now().UnixNano())
+	s.c.Start()
+}
+
+// LastBeat implements domain.Heartbeat: zero until Start has been called.
+func (s *Scheduler) LastBeat() time.Time {
+	n := s.beat.Load()
+	if n == 0 {
+		return time.Time{}
+	}
+	return time.Unix(0, n)
+}
 
 // Stop stops scheduling and waits for running jobs (ctx cancellation is the caller's job).
 func (s *Scheduler) Stop() {
 	<-s.c.Stop().Done()
 	s.wg.Wait()
 }
+
+var _ domain.Heartbeat = (*Scheduler)(nil)

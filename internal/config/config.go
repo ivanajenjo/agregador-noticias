@@ -74,7 +74,10 @@ type Config struct {
 		TelegramBot  string        `yaml:"telegram_bot_token"`
 		TelegramChat string        `yaml:"telegram_chat_id"`
 		WebhookURL   string        `yaml:"webhook_url"`
-		PublicURL    string        `yaml:"public_url"` // base URL used in alert links
+		PublicURL    string        `yaml:"public_url"`   // base URL used in alert links
+		MaxPerHour   int           `yaml:"max_per_hour"` // global rate limit (0 = unlimited)
+		QuietStart   string        `yaml:"quiet_start"`  // "HH:MM" local time; empty = no quiet hours
+		QuietEnd     string        `yaml:"quiet_end"`    // "HH:MM"; alerts held back in between get one summary afterwards
 	} `yaml:"alerts"`
 
 	Digest struct {
@@ -137,6 +140,7 @@ func Default() Config {
 	c.Alerts.Interval = 5 * time.Minute
 	c.Alerts.MinSources = 4
 	c.Alerts.Window = 2 * time.Hour
+	c.Alerts.MaxPerHour = 6
 	c.Digest.Enabled = true
 	c.Digest.Cron = "0 8 * * *"
 	c.Digest.UseLLM = true
@@ -238,6 +242,11 @@ func applyEnv(c *Config, get func(string) string) {
 	str("ALERTS_TELEGRAM_CHAT_ID", &c.Alerts.TelegramChat)
 	str("ALERTS_WEBHOOK_URL", &c.Alerts.WebhookURL)
 	str("ALERTS_PUBLIC_URL", &c.Alerts.PublicURL)
+	dur("ALERTS_INTERVAL", &c.Alerts.Interval)
+	dur("ALERTS_WINDOW", &c.Alerts.Window)
+	num("ALERTS_MAX_PER_HOUR", &c.Alerts.MaxPerHour)
+	str("ALERTS_QUIET_START", &c.Alerts.QuietStart)
+	str("ALERTS_QUIET_END", &c.Alerts.QuietEnd)
 	boolean("DIGEST_ENABLED", &c.Digest.Enabled)
 	str("DIGEST_CRON", &c.Digest.Cron)
 	boolean("DIGEST_USE_LLM", &c.Digest.UseLLM)
@@ -263,6 +272,14 @@ func (c Config) Validate() error {
 	}
 	if c.Screenshots.Quality < 1 || c.Screenshots.Quality > 100 {
 		return fmt.Errorf("screenshots.quality must be 1..100")
+	}
+	for k, v := range map[string]string{"alerts.quiet_start": c.Alerts.QuietStart, "alerts.quiet_end": c.Alerts.QuietEnd} {
+		if v == "" {
+			continue
+		}
+		if _, err := time.Parse("15:04", v); err != nil {
+			return fmt.Errorf("%s %q: expected HH:MM", k, v)
+		}
 	}
 	return nil
 }

@@ -42,6 +42,11 @@ type Options struct {
 	FetchFullText bool          // allow readability page fetches (still gated by Source.FullText)
 	RespectRobots bool          // honour robots.txt for article-page fetches
 
+	// TrackRevisions records material title/summary edits of already stored
+	// articles (config revisions.enabled). It needs a Store that also
+	// implements domain.RevisionStore; otherwise it is silently ignored.
+	TrackRevisions bool
+
 	MaxRetries         int           // retries on 5xx/429/network errors; default 2 (use -1 for none)
 	RetryBackoff       time.Duration // base backoff, doubles each retry; default 1s
 	MaxFullTextPerFeed int           // page fetches per feed per run; default 40
@@ -82,7 +87,12 @@ type Ingestor struct {
 
 	mu       sync.Mutex
 	limiters map[string]*rate.Limiter
+
+	revs atomic.Int64 // revisions recorded since creation
 }
+
+// RevisionsRecorded returns how many title/summary edits were recorded so far.
+func (in *Ingestor) RevisionsRecorded() int64 { return in.revs.Load() }
 
 var _ domain.Ingestor = (*Ingestor)(nil)
 
@@ -245,6 +255,7 @@ func (in *Ingestor) processFeed(ctx context.Context, src domain.Source, feed dom
 		if !ok || !seen.claim(src.ID+"|"+a.CanonicalURL) {
 			continue
 		}
+		in.trackRevision(ctx, a)
 		if in.wantFullText(src) && len([]rune(a.Content)) < shortContentChars && fullTextBudget > 0 {
 			if uc, ok := in.st.(urlChecker); ok {
 				if has, e := uc.HasURL(ctx, a.CanonicalURL); e == nil && has {
@@ -273,6 +284,28 @@ func (in *Ingestor) processFeed(ctx context.Context, src domain.Source, feed dom
 		}
 	}
 	return n, firstErr
+}
+
+// trackRevision compares a feed item with its stored article (same canonical
+// URL) and records a revision when the title/summary changed materially. Errors
+// are logged only: change tracking must never break ingestion.
+func (in *Ingestor) trackRevision(ctx context.Context, a domain.Article) {
+	if !in.opts.TrackRevisions {
+		return
+	}
+	rs, ok := in.st.(domain.RevisionStore)
+	if !ok {
+		return
+	}
+	changed, rev, err := rs.RecordRevision(ctx, a.CanonicalURL, a.Title, a.Summary, time.Now().UTC())
+	if err != nil {
+		in.log.Warn("ingest: record revision", "url", a.CanonicalURL, "err", err)
+		return
+	}
+	if changed {
+		in.revs.Add(1)
+		in.log.Info("ingest: headline revised", "source", a.SourceID, "url", a.CanonicalURL, "kind", rev.Kind)
+	}
 }
 
 func (in *Ingestor) wantFullText(src domain.Source) bool {

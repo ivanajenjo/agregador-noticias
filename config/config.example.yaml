@@ -36,3 +36,20 @@ embeddings:
 chat:
   base_url: "http://macbook.local:11434/v1"
   model: "qwen3:14b"
+
+# Alertas y seguimientos (opcional). Activa `enabled` y configura al menos un canal;
+# sin canales las alertas solo se registran y se ven en /seguimientos.
+# alerts:
+#   enabled: true
+#   interval: 5m                    # cada cuánto se evalúan historias y seguimientos
+#   window: 2h                      # ventana para detectar historias
+#   min_sources: 4                  # medios que cubren una historia para avisar
+#   max_per_hour: 6                 # límite global (0 = sin límite)
+#   quiet_start: "00:00"            # horas de silencio (hora local): un único resumen al terminar
+#   quiet_end: "07:00"
+#   public_url: "http://pi.local:8080"   # base de los enlaces de los avisos
+#   ntfy_url: "https://ntfy.sh"          # o tu servidor ntfy
+#   ntfy_topic: "mi-agregador-secreto"
+#   telegram_bot_token: "123456:ABC..."  # preferible AGREGADOR_ALERTS_TELEGRAM_BOT_TOKEN
+#   telegram_chat_id: "123456789"
+#   webhook_url: "https://example.org/hook"

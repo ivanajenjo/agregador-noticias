@@ -60,7 +60,13 @@ func Open(path string) (*SQLite, error) {
 	if mem {
 		path = ":memory:"
 	}
-	w, err := sql.Open("sqlite", dsn(path, "_txlock=immediate"))
+	d := dsn(path, "_txlock=immediate")
+	if !mem && freshFile(path) {
+		// auto_vacuum can only be chosen before the first table exists, so it
+		// must precede journal_mode=WAL; see retention.go
+		d = strings.Replace(d, "?", "?_pragma=auto_vacuum(2)&", 1)
+	}
+	w, err := sql.Open("sqlite", d)
 	if err != nil {
 		return nil, err
 	}

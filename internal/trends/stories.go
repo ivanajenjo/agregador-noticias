@@ -78,14 +78,30 @@ type cluster struct {
 // Stories implements domain.TrendProvider.
 func (e *Engine) Stories(ctx context.Context, o domain.TrendOptions) ([]domain.Story, error) {
 	o = normalize(o, true)
+	r, err := e.storyResult(ctx, o)
+	if err != nil {
+		return nil, err
+	}
+	return append([]domain.Story(nil), r.stories...), nil
+}
+
+// storiesResult is the cached output of the clustering: the stories plus the
+// article texts behind them (see storydetail.go).
+type storiesResult struct {
+	stories []domain.Story
+	arts    map[string][]domain.ArticleLite // story id -> members, oldest first
+	window  []domain.ArticleLite            // every article of the window
+}
+
+func (e *Engine) storyResult(ctx context.Context, o domain.TrendOptions) (*storiesResult, error) {
 	v, err := e.flightDo(ctx, optKey("S", o, ""), true, func() (any, error) { return e.computeStories(ctx, o) })
 	if err != nil {
 		return nil, err
 	}
-	return append([]domain.Story(nil), v.([]domain.Story)...), nil
+	return v.(*storiesResult), nil
 }
 
-func (e *Engine) computeStories(ctx context.Context, o domain.TrendOptions) ([]domain.Story, error) {
+func (e *Engine) computeStories(ctx context.Context, o domain.TrendOptions) (*storiesResult, error) {
 	c, now, err := e.getCorpus(ctx, o, func(now time.Time) time.Time { return now.Add(-o.Window - o.Baseline) })
 	if err != nil {
 		return nil, err
@@ -95,7 +111,7 @@ func (e *Engine) computeStories(ctx context.Context, o domain.TrendOptions) ([]d
 	end := len(c.arts)
 	nWin := end - iw
 	if nWin == 0 {
-		return nil, nil
+		return &storiesResult{}, nil
 	}
 	nT := len(c.dict.terms)
 	winDF := make([]int32, nT)
@@ -313,6 +329,7 @@ func (e *Engine) computeStories(ctx context.Context, o domain.TrendOptions) ([]d
 	}
 	disp := c.display(allIDs)
 	loc := now.Location()
+	members := map[string][]domain.ArticleLite{}
 	for _, p := range pres {
 		cl := p.cl
 		arts := make([]int32, len(cl.members))
@@ -350,6 +367,11 @@ func (e *Engine) computeStories(ctx context.Context, o domain.TrendOptions) ([]d
 		sort.Strings(keys)
 		h := sha1.Sum([]byte(strings.Join(keys, "|") + "@" + st.FirstAt.In(loc).Format("2006-01-02")))
 		st.ID = hex.EncodeToString(h[:6])
+		ms := make([]domain.ArticleLite, len(arts))
+		for i, a := range arts {
+			ms[i] = c.arts[a]
+		}
+		members[st.ID] = ms
 		leans := map[string]bool{}
 		for l := range st.Leanings {
 			if l != "desconocida" {
@@ -384,7 +406,12 @@ func (e *Engine) computeStories(ctx context.Context, o domain.TrendOptions) ([]d
 	if len(stories) > o.Limit {
 		stories = stories[:o.Limit]
 	}
-	return stories, nil
+	res := &storiesResult{stories: stories, arts: make(map[string][]domain.ArticleLite, len(stories)), window: c.arts[iw:end]}
+	for _, st := range stories {
+		ms := members[st.ID]
+		res.arts[st.ID] = ms
+	}
+	return res, nil
 }
 
 func minI(a, b int64) int64 {

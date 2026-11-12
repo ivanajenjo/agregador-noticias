@@ -1,0 +1,165 @@
+{
+ "description": "Ejemplos etiquetados a mano (titulares ficticios representativos) para calibrar un modelo de anotaciones con annotate.Evaluate. Etiquetas por criterio humano: son discutibles; amplía con tus propios casos.",
+ "samples": [
+  {
+   "title": "El Banco de España mantiene la previsión de crecimiento del PIB en el 2,4 %",
+   "summary": "Revisa levemente a la baja la inflación subyacente.",
+   "tone": "neutral",
+   "intent": "informar",
+   "frame": "económico",
+   "is_opinion": false
+  },
+  {
+   "title": "¡Caos total en Cercanías! Miles de viajeros atrapados y nadie da la cara",
+   "summary": "Una avería deja la línea C-3 sin servicio durante horas.",
+   "tone": "sensacionalista",
+   "intent": "informar",
+   "frame": "responsabilidad",
+   "is_opinion": false
+  },
+  {
+   "title": "Tribuna | El Gobierno vuelve a mirar hacia otro lado con la vivienda",
+   "summary": "Una columna sostiene que la inacción tiene un coste político.",
+   "tone": "crítico",
+   "intent": "opinar",
+   "frame": "responsabilidad",
+   "is_opinion": true
+  },
+  {
+   "title": "Una vecina de Zaragoza dona un riñón a su hermano tras años de espera",
+   "summary": "La familia relata el proceso y agradece al equipo médico.",
+   "tone": "laudatorio",
+   "intent": "informar",
+   "frame": "interés humano",
+   "is_opinion": false
+  },
+  {
+   "title": "PP y PSOE se acusan mutuamente de bloquear la renovación del CGPJ",
+   "summary": "Los dos partidos cruzan reproches en el Congreso.",
+   "tone": "neutral",
+   "intent": "informar",
+   "frame": "conflicto",
+   "is_opinion": false
+  },
+  {
+   "title": "Alerta máxima: la nueva ola de calor podría ser la más mortífera de la historia",
+   "summary": "Los expertos piden extremar la precaución.",
+   "tone": "alarmista",
+   "intent": "informar",
+   "frame": "otros",
+   "is_opinion": false
+  },
+  {
+   "title": "Editorial | Una reforma fiscal que el país necesita y que no puede esperar",
+   "summary": "El diario pide a los grupos que apoyen la propuesta.",
+   "tone": "laudatorio",
+   "intent": "persuadir",
+   "frame": "económico",
+   "is_opinion": true
+  },
+  {
+   "title": "Cómo ahorrar 300 euros al año en la factura de la luz con tres ajustes",
+   "summary": "Consejos prácticos para reducir el consumo.",
+   "tone": "neutral",
+   "intent": "informar",
+   "frame": "económico",
+   "is_opinion": false
+  },
+  {
+   "title": "Un político pillado dormido en pleno pleno: el vídeo que arrasa en redes",
+   "summary": "Las imágenes se han hecho virales en pocas horas.",
+   "tone": "humorístico",
+   "intent": "entretener",
+   "frame": "otros",
+   "is_opinion": false
+  },
+  {
+   "title": "Oferta exclusiva: suscríbete hoy y llévate seis meses gratis",
+   "summary": "Promoción válida hasta el domingo.",
+   "tone": "laudatorio",
+   "intent": "promocionar",
+   "frame": "económico",
+   "is_opinion": false
+  },
+  {
+   "title": "El Supremo condena al exalcalde por malversación de fondos públicos",
+   "summary": "La sentencia le inhabilita durante ocho años.",
+   "tone": "neutral",
+   "intent": "informar",
+   "frame": "responsabilidad",
+   "is_opinion": false
+  },
+  {
+   "title": "Opinión | Por qué debemos defender la sanidad pública sin complejos",
+   "summary": "El autor llama a movilizarse antes de las elecciones.",
+   "tone": "laudatorio",
+   "intent": "persuadir",
+   "frame": "moralidad",
+   "is_opinion": true
+  },
+  {
+   "title": "Los agricultores bloquean carreteras contra los acuerdos comerciales de la UE",
+   "summary": "Cientos de tractores cortan accesos en varias provincias.",
+   "tone": "neutral",
+   "intent": "informar",
+   "frame": "conflicto",
+   "is_opinion": false
+  },
+  {
+   "title": "Miles de familias, al borde del desahucio: la crisis que nadie quiere ver",
+   "summary": "Testimonios de afectados por la subida de las hipotecas.",
+   "tone": "alarmista",
+   "intent": "informar",
+   "frame": "interés humano",
+   "is_opinion": false
+  },
+  {
+   "title": "Columna | Los políticos y su inmensa capacidad para no dimitir nunca",
+   "summary": "Una sátira sobre la rendición de cuentas.",
+   "tone": "humorístico",
+   "intent": "opinar",
+   "frame": "responsabilidad",
+   "is_opinion": true
+  },
+  {
+   "title": "La inflación baja al 3,1 % en octubre, según el INE",
+   "summary": "Los alimentos moderan su subida respecto al mes anterior.",
+   "tone": "neutral",
+   "intent": "informar",
+   "frame": "económico",
+   "is_opinion": false
+  },
+  {
+   "title": "Una gestión desastrosa: el ministerio ignoró los avisos antes de la riada",
+   "summary": "Documentos internos muestran advertencias previas.",
+   "tone": "crítico",
+   "intent": "informar",
+   "frame": "responsabilidad",
+   "is_opinion": false
+  },
+  {
+   "title": "Abogan por limitar el uso de móviles en las aulas por razones éticas y de salud mental",
+   "summary": "Un colectivo de docentes defiende la medida.",
+   "tone": "neutral",
+   "intent": "persuadir",
+   "frame": "moralidad",
+   "is_opinion": false
+  },
+  {
+   "title": "Estreno de la película del año: crítica y entrevistas con el reparto",
+   "summary": "Nuestro crítico la considera una obra maestra.",
+   "tone": "laudatorio",
+   "intent": "entretener",
+   "frame": "otros",
+   "is_opinion": false
+  },
+  {
+   "title": "Escándalo: el presentador soltó una frase que ha indignado a media España",
+   "summary": "Una frase en directo ha generado miles de quejas.",
+   "tone": "sensacionalista",
+   "intent": "informar",
+   "frame": "moralidad",
+   "is_opinion": false
+  }
+ ]
+}

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/ivanajenjo/agregador-noticias/internal/domain"
+	"github.com/ivanajenjo/agregador-noticias/internal/store"
 )
 
 // fakeStore implements only what the ingestor uses; the embedded nil interface
@@ -435,5 +436,105 @@ func TestPerHostDelay(t *testing.T) {
 	New(newFakeStore(), o, nil).RunOnce(context.Background())
 	if d := time.Since(start); d < 280*time.Millisecond {
 		t.Errorf("per-host limiting not applied: %v", d)
+	}
+}
+
+// ---- revisions (stealth edits) ----
+
+func feedWith(items ...[3]string) string {
+	var b strings.Builder
+	b.WriteString(`<?xml version="1.0"?><rss version="2.0"><channel><title>T</title>`)
+	for _, it := range items {
+		fmt.Fprintf(&b, `<item><title>%s</title><link>%s</link><description>%s</description></item>`, it[0], it[1], it[2])
+	}
+	b.WriteString(`</channel></rss>`)
+	return b.String()
+}
+
+func TestTrackRevisionsWithRealStore(t *testing.T) {
+	var cur atomic.Value
+	cur.Store(feedWith([3]string{"Detenido el alcalde de Marbella por corrupción", "https://e.example/1", "Resumen largo de la noticia sobre el alcalde"}))
+	srv := serve(t, func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, cur.Load().(string)) })
+
+	st, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	src := domain.Source{ID: "s", Name: "S", Feeds: []domain.Feed{{URL: srv.URL}}}
+	ctx := context.Background()
+	if err := st.UpsertSources(ctx, []domain.Source{src}); err != nil {
+		t.Fatal(err)
+	}
+	o := testOpts(src)
+	o.TrackRevisions = true
+	in := New(st, o, nil)
+	run := func() int {
+		n, err := in.RunOnce(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	if run() != 1 {
+		t.Fatal("first run should insert")
+	}
+	run() // unchanged
+	if in.RevisionsRecorded() != 0 {
+		t.Fatal("unchanged feed recorded a revision")
+	}
+	// trivial edit (suffix + case)
+	cur.Store(feedWith([3]string{"DETENIDO el alcalde de Marbella por corrupción - El País", "https://e.example/1", "Resumen largo de la noticia sobre el alcalde"}))
+	run()
+	if in.RevisionsRecorded() != 0 {
+		t.Fatal("trivial edit recorded")
+	}
+	// real edit
+	cur.Store(feedWith([3]string{"Liberado el alcalde de Marbella tras declarar", "https://e.example/1", "Resumen largo de la noticia sobre el alcalde"}))
+	if n := run(); n != 0 {
+		t.Fatalf("edit inserted a new article: %d", n)
+	}
+	if in.RevisionsRecorded() != 1 {
+		t.Fatalf("revisions = %d", in.RevisionsRecorded())
+	}
+	arts, _ := st.ListArticles(ctx, domain.Filter{})
+	if len(arts) != 1 || arts[0].Title != "Liberado el alcalde de Marbella tras declarar" {
+		t.Fatalf("stored = %+v", arts)
+	}
+	revs, _ := st.ListRevisions(ctx, arts[0].ID)
+	if len(revs) != 1 || revs[0].OldText != "Detenido el alcalde de Marbella por corrupción" {
+		t.Fatalf("revs = %+v", revs)
+	}
+	// flapping back to the original: ignored
+	cur.Store(feedWith([3]string{"Detenido el alcalde de Marbella por corrupción", "https://e.example/1", "Resumen largo de la noticia sobre el alcalde"}))
+	run()
+	if in.RevisionsRecorded() != 1 {
+		t.Fatalf("flapping recorded: %d", in.RevisionsRecorded())
+	}
+
+	// disabled: edits are not tracked
+	cur.Store(feedWith([3]string{"Otro titular completamente nuevo y diferente", "https://e.example/1", "Resumen largo de la noticia sobre el alcalde"}))
+	o2 := o
+	o2.TrackRevisions = false
+	New(st, o2, nil).RunOnce(ctx)
+	if n, _ := st.CountRevisions(ctx, domain.RevisionFilter{}); n != 1 {
+		t.Fatalf("disabled tracking recorded: %d", n)
+	}
+}
+
+func TestTrackRevisionsIgnoredWithoutRevisionStore(t *testing.T) {
+	srv := serve(t, func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, feedWith([3]string{"Titular", "https://e.example/1", "x"}))
+	})
+	o := testOpts(domain.Source{ID: "s", Feeds: []domain.Feed{{URL: srv.URL}}})
+	o.TrackRevisions = true
+	in := New(newFakeStore(), o, nil) // fakeStore has no RecordRevision
+	for i := 0; i < 2; i++ {
+		if _, err := in.RunOnce(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if in.RevisionsRecorded() != 0 {
+		t.Fatal("recorded without store support")
 	}
 }

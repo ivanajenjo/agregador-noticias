@@ -1,0 +1,119 @@
+{{define "head"}}<link rel="stylesheet" href="/static/shotscmp.css?v={{.Version}}">
+<script src="/static/shotscmp-logic.js?v={{.Version}}" defer></script>
+<script src="/static/shotscmp.js?v={{.Version}}" defer></script>{{end}}
+{{define "content"}}
+<nav class="crumbs" aria-label="Ruta"><a href="{{.ShotsPageHref}}">Capturas</a> <span aria-hidden="true">›</span> <span>{{.Source.Name}}</span></nav>
+<h1>{{.Source.Name}} {{if .Source.Leaning}}<span class="badge {{leanClass .Source.Leaning}}">{{.Source.Leaning}}</span>{{end}}</h1>
+<form class="cmp-range" action="{{.SourceURL}}" method="get">
+ <input type="hidden" name="modo" value="{{.Modo}}">
+ <label class="fld">Desde <input type="date" name="desde" value="{{.Desde}}" max="{{.Today}}"></label>
+ <label class="fld">Hasta <input type="date" name="hasta" value="{{.Hasta}}" max="{{.Today}}"></label>
+ <button type="submit">Ver rango</button>
+</form>
+{{if .Empty}}
+ <p class="empty">Necesito al menos dos capturas de {{.Source.Name}} en el rango ({{.Desde}} a {{.Hasta}}) para compararlas. {{if .Total}}Solo hay una.{{else}}No hay ninguna.{{end}} Prueba a ampliar las fechas.</p>
+{{else}}
+<div class="cmp" id="cmp" data-modo="{{.Modo}}" data-a="{{.A.ID}}" data-b="{{.B.ID}}" data-source="{{.Source.ID}}" data-frames="{{.FramesJSON}}">
+ <p class="cmp-sum muted small">{{.Total}} capturas · {{.Desde}} → {{.Hasta}}{{if .Truncated}} · se muestran las {{.Total}} más recientes{{end}}</p>
+ <div class="cmp-tabs tabs" role="tablist" aria-label="Modo de vista">
+  <a role="tab" data-modo="slider" href="{{index .TabHref "slider"}}" aria-selected="{{if eq .Modo "slider"}}true{{else}}false{{end}}">Deslizador</a>
+  <a role="tab" data-modo="lado" href="{{index .TabHref "lado"}}" aria-selected="{{if eq .Modo "lado"}}true{{else}}false{{end}}">Lado a lado</a>
+  <a role="tab" data-modo="diff" href="{{index .TabHref "diff"}}" aria-selected="{{if eq .Modo "diff"}}true{{else}}false{{end}}">Diferencias</a>
+  <a role="tab" data-modo="timelapse" href="{{index .TabHref "timelapse"}}" aria-selected="{{if eq .Modo "timelapse"}}true{{else}}false{{end}}">Timelapse</a>
+ </div>
+
+ <div class="cmp-pick" data-for="compare"{{if eq .Modo "timelapse"}} hidden{{end}}>
+  <form class="cmp-form" action="{{.SourceURL}}" method="get">
+   <input type="hidden" name="modo" value="{{.Modo}}"><input type="hidden" name="desde" value="{{.Desde}}"><input type="hidden" name="hasta" value="{{.Hasta}}">
+   <div class="cmp-sel" data-slot="a">
+    <label for="cmp-a">Antes</label>
+    <div class="cmp-selrow"><button type="button" class="cmp-step" data-step="a-1" aria-label="Captura anterior (antes)" hidden>‹</button>
+    <select id="cmp-a" name="a">{{range .Opts}}<option value="{{.ID}}"{{if .SelA}} selected{{end}}>{{.L}}</option>{{end}}</select>
+    <button type="button" class="cmp-step" data-step="a+1" aria-label="Captura siguiente (antes)" hidden>›</button></div>
+   </div>
+   <a class="btn cmp-swap" href="{{.SwapHref}}" title="Intercambiar antes y después" aria-label="Intercambiar antes y después">⇄</a>
+   <div class="cmp-sel" data-slot="b">
+    <label for="cmp-b">Después</label>
+    <div class="cmp-selrow"><button type="button" class="cmp-step" data-step="b-1" aria-label="Captura anterior (después)" hidden>‹</button>
+    <select id="cmp-b" name="b">{{range .Opts}}<option value="{{.ID}}"{{if .SelB}} selected{{end}}>{{.L}}</option>{{end}}</select>
+    <button type="button" class="cmp-step" data-step="b+1" aria-label="Captura siguiente (después)" hidden>›</button></div>
+   </div>
+   <button type="submit" class="cmp-go">Comparar</button>
+  </form>
+  {{if .Presets}}<div class="cmp-presets" role="group" aria-label="Comparaciones rápidas">
+   {{range .Presets}}<a class="chip" href="{{.Href}}" data-a="{{.A}}" data-b="{{.B}}">{{.Label}}</a>{{end}}
+  </div>{{end}}
+  {{if .SameFrame}}<p class="notice warn">Antes y después son la misma captura.</p>{{end}}
+ </div>
+
+ <div class="cmp-tools">
+  <button type="button" class="btn" id="cmp-full" aria-pressed="false">Ver página completa</button>
+  <button type="button" class="btn" id="cmp-fs" hidden>Pantalla completa</button>
+  <span class="cmp-heights muted small" id="cmp-heights" aria-live="polite"></span>
+ </div>
+
+ <section class="cmp-panel" data-panel="slider" role="tabpanel" aria-label="Deslizador antes/después"{{if ne .Modo "slider"}} hidden{{end}}>
+  <div class="cmp-bar">
+   <span class="cmp-lbl"><b>Antes</b> <span data-lbl="a">{{.A.L}}</span></span>
+   <input type="range" id="cmp-pos" min="0" max="100" step="1" value="50" aria-label="Posición del deslizador: izquierda antes, derecha después">
+   <span class="cmp-lbl r"><b>Después</b> <span data-lbl="b">{{.B.L}}</span></span>
+  </div>
+  <div class="cmp-stage" id="stage-slider">
+   <div class="cmp-zoom">
+    <img class="ia" data-img="a" decoding="async" src="{{.A.U}}" alt="Portada de {{.Source.Name}}, {{.A.L}} (antes)">
+    <img class="ib" data-img="b" decoding="async" src="{{.B.U}}" alt="Portada de {{.Source.Name}}, {{.B.L}} (después)">
+    <div class="cmp-handle" id="cmp-handle" aria-hidden="true"><span class="knob">⇆</span></div>
+   </div>
+  </div>
+ </section>
+
+ <section class="cmp-panel" data-panel="lado" role="tabpanel" aria-label="Lado a lado"{{if ne .Modo "lado"}} hidden{{end}}>
+  <div class="cmp-sbs" id="stage-lado">
+   <figure><figcaption><b>Antes</b> <span data-lbl="a">{{.A.L}}</span></figcaption>
+    <div class="cmp-pane" tabindex="0" aria-label="Captura antes, desplazable"><img data-img="a" loading="lazy" decoding="async" src="{{.A.U}}" alt="Portada de {{.Source.Name}}, {{.A.L}} (antes)"></div></figure>
+   <figure><figcaption><b>Después</b> <span data-lbl="b">{{.B.L}}</span></figcaption>
+    <div class="cmp-pane" tabindex="0" aria-label="Captura después, desplazable"><img data-img="b" loading="lazy" decoding="async" src="{{.B.U}}" alt="Portada de {{.Source.Name}}, {{.B.L}} (después)"></div></figure>
+  </div>
+  <p class="muted small">El desplazamiento vertical va sincronizado entre las dos capturas.</p>
+ </section>
+
+ <section class="cmp-panel" data-panel="diff" role="tabpanel" aria-label="Mapa de diferencias"{{if ne .Modo "diff"}} hidden{{end}}>
+  <div class="cmp-bar diffbar">
+   <label for="cmp-sens">Sensibilidad</label>
+   <input type="range" id="cmp-sens" min="2" max="80" step="1" value="18" aria-label="Sensibilidad del mapa de diferencias">
+   <output id="cmp-pct" class="cmp-pct" aria-live="polite">—</output>
+  </div>
+  <p class="muted small" id="cmp-diffnote">Se compara en tu navegador, alineando por anchura. Las zonas en naranja son las que cambian entre las dos capturas.</p>
+  <div class="cmp-stage" id="stage-diff">
+   <div class="cmp-zoom">
+    <img data-img="b" decoding="async" class="dimmed" src="{{.B.U}}" alt="Portada de {{.Source.Name}}, {{.B.L}} (después), con las diferencias marcadas">
+    <canvas class="cmp-heat" id="cmp-heat" aria-hidden="true"></canvas>
+   </div>
+  </div>
+ </section>
+
+ <section class="cmp-panel" data-panel="timelapse" role="tabpanel" aria-label="Timelapse"{{if ne .Modo "timelapse"}} hidden{{end}}>
+  <div class="tl-ctl">
+   <button type="button" class="btn" id="tl-play" aria-label="Reproducir" aria-pressed="false">▶ Reproducir</button>
+   <button type="button" class="btn" id="tl-prev" aria-label="Fotograma anterior">‹</button>
+   <button type="button" class="btn" id="tl-next" aria-label="Fotograma siguiente">›</button>
+   <label class="fld">Velocidad <select id="tl-speed"><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label>
+   <label class="fld">Rango <select id="tl-day"><option value="">Todo el rango</option>{{range .Days}}<option value="{{.Key}}">{{.Label}}</option>{{end}}</select></label>
+  </div>
+  <div class="tl-bar"><input type="range" id="tl-scrub" min="0" max="{{.Total}}" step="1" value="0" aria-label="Fotograma del timelapse"><output id="tl-time" class="tl-time" aria-live="off"></output></div>
+  <p class="muted small" id="tl-hint">Atajos: espacio reproduce/pausa · ← → cambian de fotograma · Inicio/Fin · + − velocidad.</p>
+  <div class="cmp-stage" id="stage-tl"><img id="tl-img" decoding="async" alt="Fotograma del timelapse de {{.Source.Name}}" src="{{.B.U}}"></div>
+ </section>
+
+ <section class="cmp-strip-wrap" aria-label="Capturas por hora">
+  <div class="cmp-strip-head"><h2>Capturas</h2>
+   <div class="cmp-arm" role="group" aria-label="Asignar la captura pulsada a" data-for="compare"{{if eq .Modo "timelapse"}} hidden{{end}}>
+    <button type="button" class="chip on" data-arm="a" aria-pressed="true">Antes</button><button type="button" class="chip" data-arm="b" aria-pressed="false">Después</button>
+   </div></div>
+  <div class="cmp-strip" tabindex="-1">
+   {{range .Days}}<div class="cmp-day"><div class="daysep">{{.Label}}</div>
+    <ul>{{range .Frames}}<li><a class="cmp-th{{if .SelA}} selA{{end}}{{if .SelB}} selB{{end}}" href="{{.Href}}" data-i="{{.Idx}}" aria-label="{{.L}}"><img loading="lazy" decoding="async" src="{{.U}}" alt=""><span class="mk a">A</span><span class="mk b">B</span><time>{{.Time}}</time></a></li>{{end}}</ul></div>{{end}}
+  </div>
+ </section>
+</div>
+{{end}}
