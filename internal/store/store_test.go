@@ -552,3 +552,14 @@ func BenchmarkSearchVector50k(b *testing.B) {
 		}
 	}
 }
+
+func TestHasURL(t *testing.T) {
+	s := newStore(t)
+	ins(t, s, domain.Article{SourceID: "a", CanonicalURL: "http://a/1", Title: "x"})
+	if ok, err := s.HasURL(ctx, "http://a/1"); err != nil || !ok {
+		t.Fatal(ok, err)
+	}
+	if ok, err := s.HasURL(ctx, "http://a/2"); err != nil || ok {
+		t.Fatal(ok, err)
+	}
+}

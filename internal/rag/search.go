@@ -227,9 +227,6 @@ func Fuse(rrfK float64, vec, txt []domain.Hit, wVec, wTxt float64, limit int) []
 				if h.Snippet != "" {
 					a.hit.Snippet = h.Snippet
 				}
-				if a.hit.Chunk == 0 && !isVec && len(vec) == 0 {
-					a.hit.Chunk = h.Chunk
-				}
 			}
 		}
 	}

@@ -247,3 +247,14 @@ func (s *SQLite) CountArticles(ctx context.Context, f domain.Filter) (int64, err
 	err := s.r.QueryRowContext(ctx, q, args...).Scan(&n)
 	return n, err
 }
+
+// HasURL reports whether an article with this canonical URL is already stored
+// (a single lookup on the unique index).
+func (s *SQLite) HasURL(ctx context.Context, canonical string) (bool, error) {
+	var one int
+	err := s.r.QueryRowContext(ctx, `SELECT 1 FROM articles WHERE canonical_url=? LIMIT 1`, canonical).Scan(&one)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	return err == nil, err
+}
