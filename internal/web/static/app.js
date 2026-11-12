@@ -202,7 +202,7 @@
       var list = null;
       text.split("\n").forEach(function (line) {
         var li = /^\s*(?:[-*•]|\d+[.)])\s+(.*)$/.exec(line);
-        if (li) { if (!list) { list = el("ul"); box.appendChild(list); } var it = el("li"); inline(list, ""); list.appendChild(it); inline(it, li[1]); return; }
+        if (li) { if (!list) { list = el("ul"); box.appendChild(list); } var it = el("li"); list.appendChild(it); inline(it, li[1]); return; }
         list = null;
         if (!line.trim()) return;
         var p = el("p"); box.appendChild(p); inline(p, line.replace(/^#+\s*/, ""));
