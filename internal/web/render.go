@@ -41,6 +41,7 @@ func (s *server) parseTemplates() map[string]*template.Template {
 		"paras":     paras,
 		"isZero":    func(t time.Time) bool { return t.IsZero() },
 		"score":     func(f float64) string { return fmt.Sprintf("%.3f", f) },
+		"num":       humanInt,
 		"add":       func(a, b int) int { return a + b },
 	}
 	out := map[string]*template.Template{}
@@ -221,4 +222,22 @@ func safeSnippet(s string) template.HTML {
 func plainSnippet(s string) string {
 	s = tagRe.ReplaceAllString(s, "")
 	return strings.TrimSpace(s)
+}
+
+// humanInt formats with Spanish thousands separators (12.840).
+func humanInt(n int64) string {
+	s := fmt.Sprint(n)
+	neg := strings.HasPrefix(s, "-")
+	s = strings.TrimPrefix(s, "-")
+	var out []byte
+	for i := range s {
+		if i > 0 && (len(s)-i)%3 == 0 {
+			out = append(out, '.')
+		}
+		out = append(out, s[i])
+	}
+	if neg {
+		return "-" + string(out)
+	}
+	return string(out)
 }

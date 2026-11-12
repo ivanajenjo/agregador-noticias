@@ -146,7 +146,7 @@ func fixture(t *testing.T) (*fakeStore, *fakeRetriever, string) {
 	d := time.Date(day.Year(), day.Month(), day.Day(), 9, 0, 0, 0, madrid)
 	st.shots = []domain.Screenshot{
 		{ID: 1, SourceID: "pais", TakenAt: d, Path: "pais/a b/0900.jpg"},
-		{ID: 2, SourceID: "abc", TakenAt: d.Add(2 * time.Minute), Path: "abc/0902.jpg"},
+		{ID: 2, SourceID: "abc", TakenAt: d.Add(8 * time.Hour), Path: "abc/1700.jpg"},
 	}
 	ret := &fakeRetriever{mode: domain.ModeHybrid, deltas: []string{"Hola ", "mundo [1]\nlinea2"}, hits: []domain.Hit{
 		{Article: st.arts[0], Score: 0.9, Snippet: `un <mark>titular</mark> <img src=x onerror=alert(1)> y </mark><mark>`},
@@ -213,10 +213,11 @@ func (emptyStore) ListArticles(context.Context, domain.Filter) ([]domain.Article
 func (emptyStore) ListScreenshots(context.Context, string, time.Time, time.Time) ([]domain.Screenshot, error) {
 	return nil, nil
 }
-func (emptyStore) ListFeedStates(context.Context) ([]domain.FeedState, error) { return nil, nil }
-func (emptyStore) ListJobRuns(context.Context, int) ([]domain.JobRun, error)  { return nil, nil }
-func (emptyStore) Stats(context.Context, string) (*domain.Stats, error)       { return &domain.Stats{}, nil }
-func (emptyStore) GetArticle(context.Context, int64) (*domain.Article, error) { return nil, nil }
+func (emptyStore) CountArticles(context.Context, domain.Filter) (int64, error) { return 0, nil }
+func (emptyStore) ListFeedStates(context.Context) ([]domain.FeedState, error)  { return nil, nil }
+func (emptyStore) ListJobRuns(context.Context, int) ([]domain.JobRun, error)   { return nil, nil }
+func (emptyStore) Stats(context.Context, string) (*domain.Stats, error)        { return &domain.Stats{}, nil }
+func (emptyStore) GetArticle(context.Context, int64) (*domain.Article, error)  { return nil, nil }
 
 func TestPagesRenderEmpty(t *testing.T) {
 	h := New(Deps{Store: emptyStore{}, ShotsDir: t.TempDir()}, Options{})

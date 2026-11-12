@@ -20,10 +20,10 @@
 <section aria-labelledby="h-st">
  <h2 id="h-st">Datos</h2>
  <dl class="stats">
-  <div><dt>Artículos</dt><dd>{{.Stats.Articles}}</dd></div>
-  <div><dt>Con embeddings</dt><dd>{{.Stats.Embedded}}</dd></div>
-  <div><dt>Pendientes</dt><dd>{{.Stats.PendingEmbed}}</dd></div>
-  <div><dt>Capturas</dt><dd>{{.Stats.Screenshots}}</dd></div>
+  <div><dt>Artículos</dt><dd>{{num .Stats.Articles}}</dd></div>
+  <div><dt>Con embeddings</dt><dd>{{num .Stats.Embedded}}</dd></div>
+  <div><dt>Pendientes</dt><dd>{{num .Stats.PendingEmbed}}</dd></div>
+  <div><dt>Capturas</dt><dd>{{num .Stats.Screenshots}}</dd></div>
   <div><dt>Base de datos</dt><dd>{{bytes .Stats.DBBytes}}</dd></div>
   <div><dt>Capturas en disco</dt><dd>{{bytes .Stats.ShotsBytes}}</dd></div>
   {{if not (isZero .Stats.NewestArticle)}}<div><dt>Último artículo</dt><dd>{{ago .Stats.NewestArticle}}</dd></div>{{end}}
@@ -50,14 +50,14 @@
   {{range .Sources}}{{$s := .Source}}
    {{range .Feeds}}
    <tr>
-    <td data-label="Medio"><strong>{{$s.Name}}</strong></td>
-    <td data-label="Feed">{{if .Section}}{{.Section}}{{else}}<span class="muted">{{trunc 40 .FeedURL}}</span>{{end}}</td>
-    <td data-label="Último OK">{{if isZero .LastOK}}<span class="muted">nunca</span>{{else}}<span class="dot ok"></span> {{ago .LastOK}}{{end}}</td>
-    <td data-label="Último error">{{if .LastError}}<span class="dot bad"></span> {{ago .LastErrorAt}}: {{trunc 120 .LastError}}{{else}}<span class="muted">—</span>{{end}}</td>
-    <td data-label="Artículos">{{.LastCount}}</td>
+    <td data-label="Medio"><span class="v"><strong>{{$s.Name}}</strong></span></td>
+    <td data-label="Feed"><span class="v">{{if .Section}}{{.Section}}{{else}}<span class="muted">{{trunc 40 .FeedURL}}</span>{{end}}</span></td>
+    <td data-label="Último OK"><span class="v">{{if isZero .LastOK}}<span class="muted">nunca</span>{{else}}<span class="dot ok"></span> {{ago .LastOK}}{{end}}</span></td>
+    <td data-label="Último error"><span class="v">{{if .LastError}}<span class="dot bad"></span> {{ago .LastErrorAt}}: {{trunc 120 .LastError}}{{else}}<span class="muted">—</span>{{end}}</span></td>
+    <td data-label="Artículos"><span class="v">{{.LastCount}}</span></td>
    </tr>
    {{else}}
-   <tr><td data-label="Medio"><strong>{{$s.Name}}</strong></td><td data-label="Feed" colspan="4"><span class="muted">sin estado todavía</span></td></tr>
+   <tr><td data-label="Medio"><span class="v"><strong>{{$s.Name}}</strong></span></td><td data-label="Feed" colspan="4"><span class="v"><span class="muted">sin estado todavía</span></span></td></tr>
    {{end}}
   {{end}}
   </tbody>
@@ -72,10 +72,10 @@
   <tbody>
   {{range .Jobs}}
    <tr>
-    <td data-label="Tarea"><strong>{{.Job}}</strong></td>
-    <td data-label="Inicio">{{fulltime .StartedAt}}</td>
-    <td data-label="Resultado">{{if isZero .FinishedAt}}<span class="dot warn"></span> en curso{{else if .OK}}<span class="dot ok"></span> OK{{else}}<span class="dot bad"></span> error{{end}}</td>
-    <td data-label="Mensaje">{{trunc 160 .Message}}</td>
+    <td data-label="Tarea"><span class="v"><strong>{{.Job}}</strong></span></td>
+    <td data-label="Inicio"><span class="v">{{fulltime .StartedAt}}</span></td>
+    <td data-label="Resultado"><span class="v">{{if isZero .FinishedAt}}<span class="dot warn"></span> en curso{{else if .OK}}<span class="dot ok"></span> OK{{else}}<span class="dot bad"></span> error{{end}}</span></td>
+    <td data-label="Mensaje"><span class="v">{{trunc 160 .Message}}</span></td>
    </tr>
   {{end}}
   </tbody>

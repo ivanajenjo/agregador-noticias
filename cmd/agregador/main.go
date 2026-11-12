@@ -159,7 +159,7 @@ func run(cfgPath string) error {
 	handler := web.New(web.Deps{
 		Store: st, Retriever: retriever, Ingestor: ing, Shots: shots, LLM: status,
 		ShotsDir: shotsDir, Log: log,
-	}, web.Options{BasicAuthUser: cfg.Auth.User, BasicAuthPass: cfg.Auth.Pass, Location: loc, Version: version})
+	}, web.Options{BasicAuthUser: cfg.Auth.User, BasicAuthPass: cfg.Auth.Pass, Location: loc, Version: version, EmbedModel: cfg.Embeddings.Model})
 	srv := &http.Server{Addr: cfg.Listen, Handler: handler, ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 2 * time.Minute}
 
 	errc := make(chan error, 1)
