@@ -84,10 +84,34 @@ preguntar (RAG)** para comparar cómo cada medio cuenta lo mismo. Uso personal, 
   - Las etiquetas son **inferencias probabilísticas del modelo, no verdades**: la UI las muestra como tales, con el modelo usado.
   - UI futura: filtros/agrupación por etiqueta, comparación de tono entre medios para un mismo tema, y uso como filtro en RAG.
 
+## 5b. Tendencias y detección de noticias importantes (RF7)
+Objetivo: ver **de qué se está hablando ahora que antes no**, y **comparar cómo lo tratan los distintos medios**.
+- **Sin LLM** (debe funcionar con el Mac apagado): extracción de términos del titular+resumen con tokenización
+  en español, stopwords, minúsculas/acentos normalizados; unigramas, bigramas y entidades (secuencias en mayúscula: personas, partidos, lugares).
+- **Términos en alza**: frecuencia en una ventana reciente (6 h / 24 h / 48 h / 7 d) frente a una línea base
+  (los 14 días anteriores) con suavizado; puntuación de ráfaga (burst), mínimos de artículos y de **medios distintos**
+  (un tema que solo repite un medio no es tendencia) y marca "nuevo" cuando casi no existía antes. Sparkline diaria.
+- **Historias destacadas** (clusters): agrupa artículos de distintos medios que hablan de lo mismo (solapamiento de términos/entidades
+  en una ventana corta). Se ordenan por nº de medios que la cubren × frescura × diversidad de líneas editoriales.
+  Para cada historia: titular representativo, **quién la publicó primero y cuándo**, titular de cada medio agrupado por línea
+  editorial, y los medios que **no** la cubren (omisión).
+- **Detalle de término/historia**: matriz de cobertura por medio, línea temporal, titulares lado a lado, términos asociados,
+  y atajo a *Preguntar → comparar medios* con la consulta rellena (el LLM, si está, contrasta el enfoque).
+- Ignorar ruido: términos genéricos del medio (nombres de los propios periódicos, secciones, "última hora", fechas), lista editable.
+- Rendimiento en la Pi: cálculo bajo demanda sobre ≤ 30 k artículos en < 300 ms con caché en memoria (TTL 5 min); sin tablas nuevas.
+- API: `GET /api/trends`, `/api/trends/term`, `/api/stories`.
+
+## 5c. Cobertura de medios y despliegue
+- Catálogo ampliado a los **principales periódicos y agencias nacionales** (≥ 25 medios con feeds verificados; los que bloqueen, documentados).
+- **Despliegue con Docker en la Raspberry Pi (arm64)**: imagen multi-arch publicada desde CI, `docker compose` con límites de
+  memoria/CPU, healthcheck, volumen de datos, reinicio automático, perfil opcional de Chromium para capturas, HTTPS opcional con
+  Caddy (necesario para instalar la PWA), copias de seguridad de SQLite, guía en `docs/DESPLIEGUE.md`.
+
 ## 6. Fuera de alcance (por ahora)
 Multiusuario, app móvil nativa (se cubre con PWA), notificaciones, scraping de contenidos tras paywall.
 
 ## 7. Criterios de aceptación
+0. (RF7) Con datos de varios días, la página Tendencias muestra términos en alza e historias con cobertura por medio; funciona sin LLM.
 1. `go build ./... && go test ./...` en verde; `GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build` funciona.
 2. Con red: tras arrancar, aparecen artículos de ≥ 8 medios en la portada en pocos minutos.
 3. Con un servidor OpenAI-compatible falso, los artículos se embeben y la búsqueda híbrida y el RAG con citas funcionan; sin él, la búsqueda FTS funciona y la UI explica el estado.
