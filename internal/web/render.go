@@ -15,11 +15,12 @@ import (
 )
 
 type pageData struct {
-	Title   string
-	Nav     string
-	Version string
-	Trends  bool
-	V       any
+	Title      string
+	Nav        string
+	Version    string
+	Items      []NavItem
+	MoreActive bool
+	V          any
 }
 
 type errorView struct {
@@ -60,7 +61,7 @@ func (s *server) parseTemplates() map[string]*template.Template {
 func (s *server) render(w http.ResponseWriter, r *http.Request, code int, page, title, nav string, v any) {
 	t := s.tpl[page]
 	var buf bytes.Buffer
-	if err := t.ExecuteTemplate(&buf, "base", pageData{Title: title, Nav: nav, Version: s.o.Version, Trends: s.d.Trends != nil, V: v}); err != nil {
+	if err := t.ExecuteTemplate(&buf, "base", s.pageData(title, nav, v)); err != nil {
 		s.log.Error("template", "page", page, "err", err)
 		http.Error(w, "Error interno", http.StatusInternalServerError)
 		return
@@ -69,6 +70,17 @@ func (s *server) render(w http.ResponseWriter, r *http.Request, code int, page, 
 	w.Header().Add("Vary", "HX-Request")
 	w.WriteHeader(code)
 	_, _ = w.Write(buf.Bytes())
+}
+
+func (s *server) pageData(title, nav string, v any) pageData {
+	items := s.visibleNav()
+	more := nav == "more"
+	for _, i := range items {
+		if i.Key == nav && !i.Primary {
+			more = true
+		}
+	}
+	return pageData{Title: title, Nav: nav, Version: s.o.Version, Items: items, MoreActive: more, V: v}
 }
 
 // fragment executes a named template defined in a page file.

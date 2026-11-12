@@ -106,6 +106,12 @@ func New(deps Deps, opts Options) http.Handler {
 	mux.HandleFunc("GET /manifest.webmanifest", s.serveRootStatic("manifest.webmanifest"))
 	mux.HandleFunc("GET /favicon.svg", s.serveRootStatic("icon.svg"))
 	mux.HandleFunc("GET /shots/{path...}", s.serveShot)
+	navMu.Lock()
+	hooks := append([]func(*server, *http.ServeMux){}, routeHooks...)
+	navMu.Unlock()
+	for _, h := range hooks {
+		h(s, mux)
+	}
 	mux.HandleFunc("/", s.notFound)
 
 	var h http.Handler = mux

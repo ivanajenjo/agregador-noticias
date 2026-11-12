@@ -129,6 +129,14 @@ CREATE TABLE article_annotations (
 ) WITHOUT ROWID;
 CREATE INDEX idx_annotations_kind_label ON article_annotations (kind, model, label);
 `,
+	// Reserved slots 3..6: each feature replaces its own slot from its own file
+	// (internal/store/migrations_<feature>.go, in an init() assigning migrations[N-1]).
+	// 3: article_revisions (cambios de titulares)  4: watches + alerts (seguimientos)
+	// 5: digests (resumen diario)                  6: spare
+	"SELECT 1;",
+	"SELECT 1;",
+	"SELECT 1;",
+	"SELECT 1;",
 }
 
 func migrate(ctx context.Context, db *sql.DB) error {

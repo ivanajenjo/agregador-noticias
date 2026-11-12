@@ -60,6 +60,42 @@ type Config struct {
 		Timeout     time.Duration `yaml:"timeout"`
 	} `yaml:"embeddings"`
 
+	Retention struct {
+		ArticlesDays int `yaml:"articles_days"` // 0 = keep forever
+	} `yaml:"retention"`
+
+	Alerts struct {
+		Enabled      bool          `yaml:"enabled"`
+		Interval     time.Duration `yaml:"interval"`    // evaluation period
+		MinSources   int           `yaml:"min_sources"` // outlets covering a story to alert
+		Window       time.Duration `yaml:"window"`
+		NtfyURL      string        `yaml:"ntfy_url"` // e.g. https://ntfy.sh or self-hosted
+		NtfyTopic    string        `yaml:"ntfy_topic"`
+		TelegramBot  string        `yaml:"telegram_bot_token"`
+		TelegramChat string        `yaml:"telegram_chat_id"`
+		WebhookURL   string        `yaml:"webhook_url"`
+		PublicURL    string        `yaml:"public_url"` // base URL used in alert links
+	} `yaml:"alerts"`
+
+	Digest struct {
+		Enabled bool   `yaml:"enabled"`
+		Cron    string `yaml:"cron"`    // daily generation time
+		UseLLM  bool   `yaml:"use_llm"` // narrative with the chat model when reachable
+	} `yaml:"digest"`
+
+	Revisions struct {
+		Enabled bool `yaml:"enabled"` // track headline/summary changes of known articles
+	} `yaml:"revisions"`
+
+	Annotations struct {
+		Enabled   bool          `yaml:"enabled"`
+		BaseURL   string        `yaml:"base_url"` // empty => reuse chat.base_url
+		Model     string        `yaml:"model"`    // small model, empty => chat.model
+		APIKey    string        `yaml:"api_key"`
+		Interval  time.Duration `yaml:"interval"`
+		BatchSize int           `yaml:"batch_size"`
+	} `yaml:"annotations"`
+
 	Chat struct {
 		BaseURL     string        `yaml:"base_url"`
 		Model       string        `yaml:"model"`
@@ -97,6 +133,16 @@ func Default() Config {
 	c.Embeddings.BatchSize = 16
 	c.Embeddings.Interval = time.Minute
 	c.Embeddings.Timeout = 60 * time.Second
+	c.Retention.ArticlesDays = 0
+	c.Alerts.Interval = 5 * time.Minute
+	c.Alerts.MinSources = 4
+	c.Alerts.Window = 2 * time.Hour
+	c.Digest.Enabled = true
+	c.Digest.Cron = "0 8 * * *"
+	c.Digest.UseLLM = true
+	c.Revisions.Enabled = true
+	c.Annotations.Interval = 2 * time.Minute
+	c.Annotations.BatchSize = 8
 	c.Chat.Temperature = 0.2
 	c.Chat.Timeout = 5 * time.Minute
 	return c
@@ -183,6 +229,23 @@ func applyEnv(c *Config, get func(string) string) {
 	str("EMBEDDINGS_API_KEY", &c.Embeddings.APIKey)
 	str("EMBEDDINGS_QUERY_PREFIX", &c.Embeddings.QueryPrefix)
 	str("EMBEDDINGS_DOC_PREFIX", &c.Embeddings.DocPrefix)
+	num("RETENTION_ARTICLES_DAYS", &c.Retention.ArticlesDays)
+	boolean("ALERTS_ENABLED", &c.Alerts.Enabled)
+	num("ALERTS_MIN_SOURCES", &c.Alerts.MinSources)
+	str("ALERTS_NTFY_URL", &c.Alerts.NtfyURL)
+	str("ALERTS_NTFY_TOPIC", &c.Alerts.NtfyTopic)
+	str("ALERTS_TELEGRAM_BOT_TOKEN", &c.Alerts.TelegramBot)
+	str("ALERTS_TELEGRAM_CHAT_ID", &c.Alerts.TelegramChat)
+	str("ALERTS_WEBHOOK_URL", &c.Alerts.WebhookURL)
+	str("ALERTS_PUBLIC_URL", &c.Alerts.PublicURL)
+	boolean("DIGEST_ENABLED", &c.Digest.Enabled)
+	str("DIGEST_CRON", &c.Digest.Cron)
+	boolean("DIGEST_USE_LLM", &c.Digest.UseLLM)
+	boolean("REVISIONS_ENABLED", &c.Revisions.Enabled)
+	boolean("ANNOTATIONS_ENABLED", &c.Annotations.Enabled)
+	str("ANNOTATIONS_BASE_URL", &c.Annotations.BaseURL)
+	str("ANNOTATIONS_MODEL", &c.Annotations.Model)
+	str("ANNOTATIONS_API_KEY", &c.Annotations.APIKey)
 	str("CHAT_BASE_URL", &c.Chat.BaseURL)
 	str("CHAT_MODEL", &c.Chat.Model)
 	str("CHAT_API_KEY", &c.Chat.APIKey)

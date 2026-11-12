@@ -15,28 +15,17 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/static/icon-192.png">
 <link rel="stylesheet" href="/static/app.css?v={{.Version}}">
+{{block "head" .V}}{{end}}
 <script src="/static/htmx.min.js?v=2.0.4" defer></script>
 <script src="/static/app.js?v={{.Version}}" defer></script>
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
- <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
- <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
- <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
- <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 16l5-5 4 4 3-3 6 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
- <symbol id="i-trend" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M15 7h6v6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
- <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-</svg>
 <a class="skip" href="#main">Saltar al contenido</a>
 <header class="top">
  <a class="brand" href="/"><svg class="mark" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" fill="currentColor"/><g fill="var(--bg)"><rect x="6" y="6" width="12" height="2.2" rx=".6"/><rect x="6" y="10" width="5" height="5" rx=".8"/><rect x="13" y="10" width="5" height="1.2" rx=".6"/><rect x="13" y="12.6" width="5" height="1.2" rx=".6"/><rect x="6" y="16.6" width="12" height="1.2" rx=".6"/></g></svg><span class="word">Agregador</span></a>
  <nav class="nav" aria-label="Principal">
-  <a href="/"{{if eq .Nav "home"}} aria-current="page"{{end}}><svg class="ic"><use href="#i-home"/></svg><span>Portada</span></a>
-  <a href="/buscar"{{if eq .Nav "search"}} aria-current="page"{{end}}><svg class="ic"><use href="#i-search"/></svg><span>Buscar</span></a>
-  <a href="/preguntar"{{if eq .Nav "ask"}} aria-current="page"{{end}}><svg class="ic"><use href="#i-chat"/></svg><span>Preguntar</span></a>
-  {{if .Trends}}<a href="/tendencias"{{if eq .Nav "trends"}} aria-current="page"{{end}}><svg class="ic"><use href="#i-trend"/></svg><span>Tendencias</span></a>
-  {{end}}<a href="/capturas"{{if eq .Nav "shots"}} aria-current="page"{{end}}><svg class="ic"><use href="#i-image"/></svg><span>Capturas</span></a>
-  <a href="/estado"{{if eq .Nav "status"}} aria-current="page"{{end}}><svg class="ic"><use href="#i-pulse"/></svg><span>Estado</span></a>
+  {{range .Items}}<a href="{{.Href}}" class="{{if not .Primary}}sec{{end}}"{{if eq $.Nav .Key}} aria-current="page"{{end}}><svg class="ic" viewBox="0 0 24 24" aria-hidden="true">{{.Icon}}</svg><span>{{.Label}}</span></a>
+  {{end}}<a href="/mas" class="more"{{if .MoreActive}} aria-current="page"{{end}}><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></g></svg><span>Más</span></a>
  </nav>
 </header>
 <main id="main" class="wrap page-{{.Nav}}">

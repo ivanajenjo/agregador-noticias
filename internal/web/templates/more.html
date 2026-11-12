@@ -1,0 +1,6 @@
+{{define "content"}}
+<h1 class="h1">Más</h1>
+<ul class="more-list">
+{{range .Items}} <li><a class="more-card" href="{{.Href}}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true">{{.Icon}}</svg><span><strong>{{.Label}}</strong>{{if .Desc}}<small>{{.Desc}}</small>{{end}}</span></a></li>
+{{end}}</ul>
+{{end}}
