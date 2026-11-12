@@ -1,0 +1,52 @@
+{{define "content"}}
+<h1>Capturas</h1>
+<div class="daybar">
+ <a class="btn" href="/capturas?date={{.Prev}}&amp;mode={{.Mode}}" rel="prev" aria-label="Día anterior">←</a>
+ <form class="dayform" action="/capturas" method="get">
+  <input type="hidden" name="mode" value="{{.Mode}}">
+  <label class="sr" for="date">Día</label>
+  <input id="date" type="date" name="date" value="{{.Date}}" max="{{.Today}}">
+  <button type="submit" class="btn">Ir</button>
+ </form>
+ {{if .Next}}<a class="btn" href="/capturas?date={{.Next}}&amp;mode={{.Mode}}" rel="next" aria-label="Día siguiente">→</a>{{else}}<span class="btn dis" aria-hidden="true">→</span>{{end}}
+ {{if not .IsToday}}<a class="btn" href="/capturas?mode={{.Mode}}">Hoy</a>{{end}}
+</div>
+<p class="daylabel">{{.DayLabel}} · {{.Total}} captura{{if ne .Total 1}}s{{end}}</p>
+<div class="tabs" role="tablist">
+ <a role="tab" href="/capturas?date={{.Date}}" {{if eq .Mode "grid"}}aria-selected="true"{{else}}aria-selected="false"{{end}}>Cuadrícula</a>
+ <a role="tab" href="/capturas?date={{.Date}}&amp;mode=compare" {{if eq .Mode "compare"}}aria-selected="true"{{else}}aria-selected="false"{{end}}>Comparar</a>
+ {{if .CanCapture}}<span class="push"><button class="btn" hx-post="/api/jobs/screenshots" hx-target="next .jobmsg" hx-swap="innerHTML" hx-headers='{"X-Requested-With":"htmx"}'>Capturar ahora</button> <span class="jobmsg" aria-live="polite"></span></span>{{end}}
+</div>
+{{if .Err}}<p class="notice err" role="alert">{{.Err}}</p>{{end}}
+{{if not .Total}}
+ <p class="empty">No hay capturas para este día.</p>
+{{else if eq .Mode "grid"}}
+ <div class="shotgrid">
+ {{range .Rows}}
+  <article class="shotcard">
+   {{$src := .Source}}
+   <h2>{{.Source.Name}} {{if .Source.Leaning}}<span class="badge {{leanClass .Source.Leaning}}">{{.Source.Leaning}}</span>{{end}}</h2>
+   {{if .Latest}}
+    <a class="thumb" href="{{.Latest.URL}}" data-viewer="grid" data-title="{{.Source.Name}} · {{.Latest.Time}}"><img loading="lazy" decoding="async" src="{{.Latest.URL}}" alt="Portada de {{.Source.Name}} a las {{.Latest.Time}}"></a>
+    <ul class="timeline" aria-label="Línea temporal de {{.Source.Name}}">
+     {{range .Shots}}<li><a href="{{.URL}}" data-viewer="tl-{{$src.ID}}" data-title="{{$src.Name}} · {{.Time}}">{{.Time}}</a></li>{{end}}
+    </ul>
+   {{else}}<p class="empty">Sin capturas este día.</p>{{end}}
+  </article>
+ {{end}}
+ </div>
+{{else}}
+ <div class="hours" role="group" aria-label="Hora">
+  {{range .Hours}}<a class="chip{{if eq . $.Hour}} on{{end}}" href="/capturas?date={{$.Date}}&amp;mode=compare&amp;hour={{.}}">{{.}}:00</a>{{end}}
+ </div>
+ <div class="compare">
+ {{range .Cells}}
+  <figure class="cell">
+   <figcaption>{{.Source.Name}}{{if .Shot}} · {{.Shot.Time}}{{end}}</figcaption>
+   {{if .Shot}}<a class="thumb" href="{{.Shot.URL}}" data-viewer="cmp" data-title="{{.Source.Name}} · {{.Shot.Time}}"><img loading="lazy" decoding="async" src="{{.Shot.URL}}" alt="Portada de {{.Source.Name}} a las {{.Shot.Time}}"></a>
+   {{else}}<p class="empty">Sin captura a esta hora.</p>{{end}}
+  </figure>
+ {{end}}
+ </div>
+{{end}}
+{{end}}

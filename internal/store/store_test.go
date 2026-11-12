@@ -168,7 +168,7 @@ func TestSearchText(t *testing.T) {
 		{`title:educacion "`, domain.Filter{}, 2, ""},
 		{"", domain.Filter{}, 0, ""},
 		{"   !!! ", domain.Filter{}, 0, ""},
-		{"el que de la", domain.Filter{}, 0, ""}, // only stopwords -> still safe
+		{"el que de la", domain.Filter{}, 3, ""}, // only stopwords -> falls back to them, still safe
 	}
 	for _, tc := range tests {
 		t.Run(tc.q, func(t *testing.T) {
@@ -505,7 +505,7 @@ func TestConcurrency(t *testing.T) {
 func TestFTSQuery(t *testing.T) {
 	for in, want := range map[string]string{
 		"educación pública": `"educación" OR "pública"*`,
-		`a "b" -c`:          `"a" OR "b" OR "c"*`,
+		`a "b" -c`:          `"b" OR "c"*`,
 		"el de la":          `"el" OR "de" OR "la"*`,
 		"el gato":           `"gato"*`,
 		"":                  "",

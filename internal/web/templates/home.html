@@ -1,0 +1,39 @@
+{{define "content"}}
+<h1 class="sr">Portada</h1>
+{{template "home_cols" .}}
+{{end}}
+
+{{define "home_cols"}}
+<div id="portada" hx-get="/fragmentos/portada" hx-trigger="every 300s" hx-swap="outerHTML">
+{{if .Err}}<p class="notice err" role="alert">{{.Err}}</p>{{end}}
+{{if not .Cols}}
+ <p class="empty">Todavía no hay medios ni artículos. Cuando se ejecute la primera ingesta aparecerán aquí.</p>
+{{else}}
+ <nav class="chips" aria-label="Medios">
+  {{range .Cols}}<a class="chip {{leanClass .Source.Leaning}}" href="#src-{{.Source.ID}}" data-scroll-to="src-{{.Source.ID}}">{{.Source.Name}}</a>{{end}}
+ </nav>
+ <div class="cols">
+ {{range .Cols}}
+  <section class="col {{leanClass .Source.Leaning}}" id="src-{{.Source.ID}}" aria-labelledby="h-{{.Source.ID}}">
+   <h2 id="h-{{.Source.ID}}"><a href="/buscar?source={{.Source.ID}}">{{.Source.Name}}</a>{{if .Source.Leaning}} <span class="badge {{leanClass .Source.Leaning}}">{{.Source.Leaning}}</span>{{end}}</h2>
+   {{if .Articles}}
+   <ol class="alist">
+   {{range .Articles}}
+    <li>
+     <a class="atitle" href="/articulo/{{.ID}}">{{.Title}}</a>
+     <div class="meta">
+      <time datetime="{{if isZero .PublishedAt}}{{datetime .FirstSeenAt}}{{else}}{{datetime .PublishedAt}}{{end}}">{{if isZero .PublishedAt}}{{ago .FirstSeenAt}}{{else}}{{ago .PublishedAt}}{{end}}</time>
+      {{if .Section}}<span>· {{.Section}}</span>{{end}}
+      <a class="ext" href="{{.URL}}" target="_blank" rel="noopener noreferrer" aria-label="Abrir original: {{.Title}}">Original ↗</a>
+     </div>
+    </li>
+   {{end}}
+   </ol>
+   {{else}}<p class="empty">Sin artículos todavía.</p>{{end}}
+  </section>
+ {{end}}
+ </div>
+ <p class="muted small">Actualizado a las {{clock .Updated}} · se refresca cada 5 min.</p>
+{{end}}
+</div>
+{{end}}

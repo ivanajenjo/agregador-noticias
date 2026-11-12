@@ -438,24 +438,27 @@ type srcHealth struct {
 	Errors int
 }
 type statusView struct {
-	Sources    []srcHealth
-	Jobs       []domain.JobRun
-	Stats      *domain.Stats
-	HaveLLM    bool
-	Chat       domain.Health
-	Embed      domain.Health
-	Running    map[string]time.Time
-	Last       map[string]jobResult
-	Version    string
-	CanIngest  bool
-	CanCapture bool
-	Err        string
+	Sources                       []srcHealth
+	Jobs                          []domain.JobRun
+	Stats                         *domain.Stats
+	HaveLLM                       bool
+	Chat                          domain.Health
+	Embed                         domain.Health
+	Running                       map[string]time.Time
+	Last                          map[string]jobResult
+	Version                       string
+	CanIngest                     bool
+	IngestRunning, CaptureRunning bool
+	CanCapture                    bool
+	Err                           string
 }
 
 func (s *server) buildStatus(ctx context.Context) statusView {
 	v := statusView{Version: s.o.Version, CanIngest: s.d.Ingestor != nil, CanCapture: s.d.Shots != nil}
 	snap := s.jobs.snapshot()
 	v.Running, v.Last = snap.Running, snap.Last
+	_, v.IngestRunning = snap.Running["ingest"]
+	_, v.CaptureRunning = snap.Running["screenshots"]
 	src, err := s.d.Store.ListSources(ctx)
 	if err != nil {
 		v.Err = "No se pudo leer el estado de las fuentes."

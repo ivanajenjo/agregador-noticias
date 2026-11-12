@@ -1,0 +1,43 @@
+{{define "content"}}
+<h1>Buscar</h1>
+<form class="searchform" action="/buscar" method="get" role="search"
+      hx-get="/buscar" hx-target="#results" hx-push-url="true" hx-indicator="#spin" hx-trigger="input delay:350ms, submit">
+ <div class="sbar">
+  <label class="sr" for="q">Consulta</label>
+  <input id="q" type="search" name="q" value="{{.Q}}" maxlength="300" placeholder="Busca noticias…" autocomplete="off" enterkeyhint="search" autofocus>
+  <button type="submit">Buscar</button>
+  <span id="spin" class="htmx-indicator" aria-hidden="true"></span>
+ </div>
+ {{template "filters" .Filter}}
+</form>
+<div id="results" aria-live="polite">{{template "search_results" .}}</div>
+{{end}}
+
+{{define "search_results"}}
+{{if .Err}}<p class="notice err" role="alert">{{.Err}}</p>
+{{else if not .Searched}}<p class="empty">Escribe algo para buscar en todos los medios.</p>
+{{else if not .Hits}}<p class="empty">Sin resultados{{if gt .Page 1}} en esta página{{end}}.</p>
+{{else}}
+ <p class="modeline">
+  {{if eq .Mode "hybrid"}}<span class="badge mode-h" title="Palabras clave + similitud semántica">Búsqueda híbrida</span>
+  {{else}}<span class="badge mode-t" title="Embeddings no disponibles: solo palabras clave">Solo texto</span>{{end}}
+  <span class="muted small">Página {{.Page}}</span>
+ </p>
+ <ol class="results">
+ {{range .Hits}}
+  <li class="result">
+   <a class="atitle" href="/articulo/{{.Article.ID}}">{{.Article.Title}}</a>
+   <div class="meta"><span class="badge {{leanClass .Leaning}}">{{.SourceName}}</span>
+    {{if not (isZero .Article.PublishedAt)}}<time datetime="{{datetime .Article.PublishedAt}}">{{ago .Article.PublishedAt}}</time>{{else if not (isZero .Article.FirstSeenAt)}}<time datetime="{{datetime .Article.FirstSeenAt}}">{{ago .Article.FirstSeenAt}}</time>{{end}}
+    {{if .Article.Section}}<span>· {{.Article.Section}}</span>{{end}}
+    <a class="ext" href="{{.Article.URL}}" target="_blank" rel="noopener noreferrer">Original ↗</a></div>
+   {{if .Snippet}}<p class="snip">{{.Snippet}}</p>{{end}}
+  </li>
+ {{end}}
+ </ol>
+ <nav class="pager" aria-label="Paginación">
+  {{if .PrevURL}}<a class="btn" href="{{.PrevURL}}" hx-get="{{.PrevURL}}" hx-target="#results" hx-push-url="true" rel="prev">← Anterior</a>{{else}}<span></span>{{end}}
+  {{if .NextURL}}<a class="btn" href="{{.NextURL}}" hx-get="{{.NextURL}}" hx-target="#results" hx-push-url="true" rel="next">Siguiente →</a>{{end}}
+ </nav>
+{{end}}
+{{end}}

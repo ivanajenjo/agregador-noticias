@@ -1,6 +1,6 @@
 module github.com/ivanajenjo/agregador-noticias
 
-go 1.25
+go 1.26.0
 
 require (
 	github.com/andybalholm/cascadia v1.3.3 // indirect

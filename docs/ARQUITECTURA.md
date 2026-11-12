@@ -19,7 +19,7 @@
 
 | Tema | Decisión | Motivo |
 |---|---|---|
-| Lenguaje | Go 1.25+, sin CGO | Binario estático, ~20-50 MB RAM, cross-compile arm64 trivial |
+| Lenguaje | Go 1.26+, sin CGO | Binario estático, ~20-50 MB RAM, cross-compile arm64 trivial |
 | BD | SQLite vía `modernc.org/sqlite` (puro Go) | Cero servicios extra en la Pi; WAL; FTS5 incluido |
 | Vectores | BLOB float32 en SQLite + coseno por fuerza bruta en Go, caché en memoria, tras interfaz `VectorIndex` | 50k × 768 dims ≈ 150 MB en float32; con cuantización int8 en memoria ≈ 38 MB. Suficiente para hobby; evita Qdrant/pgvector. Intercambiable |
 | Búsqueda | Híbrida FTS5 (BM25) + coseno, fusión RRF | Mejor recall en español y nombres propios; funciona sin LLM |

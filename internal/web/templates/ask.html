@@ -1,0 +1,18 @@
+{{define "content"}}
+<h1>Preguntar</h1>
+{{if not .Available}}<p class="notice err" role="alert">El sistema de preguntas no está configurado.</p>{{end}}
+{{if .LLMDown}}<p class="notice warn" role="status">El modelo de lenguaje no responde{{if .Detail}} ({{.Detail}}){{end}}. Puedes preguntar igualmente: se mostrarán las fuentes recuperadas, sin respuesta redactada.</p>{{end}}
+<div id="ask-filters">{{template "filters" .Filter}}</div>
+<noscript><p class="notice warn">Esta página necesita JavaScript para mostrar la respuesta en directo.</p></noscript>
+<div id="chat" class="chat" aria-live="polite" aria-busy="false">
+ <p class="empty" id="chat-empty">Haz una pregunta sobre las noticias recogidas. Activa «Comparar medios» para contrastar cómo la cuenta cada línea editorial. Las citas [n] enlazan a las fuentes.</p>
+</div>
+<form id="ask-form" class="composer" autocomplete="off">
+ <label class="chk sw"><input type="checkbox" name="compare" id="compare"> <span>Comparar medios</span></label>
+ <div class="cbar">
+  <label class="sr" for="question">Pregunta</label>
+  <textarea id="question" name="question" rows="1" maxlength="2000" required enterkeyhint="send" placeholder="Pregunta sobre las noticias…"></textarea>
+  <button type="submit" id="ask-btn" aria-label="Enviar pregunta"><svg class="ic"><use href="#i-chat"/></svg><span>Enviar</span></button>
+ </div>
+</form>
+{{end}}

@@ -1,0 +1,64 @@
+{{define "base"}}<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Agregador">
+<meta name="htmx-config" content='{"includeIndicatorStyles":false,"allowEval":false,"historyCacheSize":0,"responseHandling":[{"code":".*","swap":true}]}'>
+<title>{{.Title}} · Agregador</title>
+<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
+<link rel="stylesheet" href="/static/app.css?v={{.Version}}">
+<script src="/static/htmx.min.js?v=2.0.4" defer></script>
+<script src="/static/app.js?v={{.Version}}" defer></script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+ <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+ <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+ <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+ <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 16l5-5 4 4 3-3 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+ <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+<a class="skip" href="#main">Saltar al contenido</a>
+<header class="top">
+ <a class="brand" href="/"><span class="logo" aria-hidden="true">A</span><span>Agregador</span></a>
+ <nav class="nav" aria-label="Principal">
+  <a href="/"{{if eq .Nav "home"}} aria-current="page"{{end}}><svg class="ic"><use href="#i-home"/></svg><span>Portada</span></a>
+  <a href="/buscar"{{if eq .Nav "search"}} aria-current="page"{{end}}><svg class="ic"><use href="#i-search"/></svg><span>Buscar</span></a>
+  <a href="/preguntar"{{if eq .Nav "ask"}} aria-current="page"{{end}}><svg class="ic"><use href="#i-chat"/></svg><span>Preguntar</span></a>
+  <a href="/capturas"{{if eq .Nav "shots"}} aria-current="page"{{end}}><svg class="ic"><use href="#i-image"/></svg><span>Capturas</span></a>
+  <a href="/estado"{{if eq .Nav "status"}} aria-current="page"{{end}}><svg class="ic"><use href="#i-pulse"/></svg><span>Estado</span></a>
+ </nav>
+</header>
+<main id="main" class="wrap page-{{.Nav}}">
+{{template "content" .V}}
+</main>
+<footer class="foot">Agregador de noticias · {{.Version}}</footer>
+</body>
+</html>{{end}}
+
+{{define "filters"}}
+<details class="filters"{{if .Active}} open{{end}}>
+ <summary>Filtros{{if .Active}} <span class="count">{{.Active}}</span>{{end}}</summary>
+ <div class="fgrid">
+  <fieldset><legend>Medios</legend>
+   {{range .Sources}}<label class="chk"><input type="checkbox" name="source" value="{{.ID}}"{{if .Checked}} checked{{end}}> <span>{{.Name}}</span></label>
+   {{else}}<p class="muted">Sin medios configurados.</p>{{end}}
+  </fieldset>
+  <fieldset><legend>Línea editorial</legend>
+   {{range .Leanings}}<label class="chk"><input type="checkbox" name="leaning" value="{{.Name}}"{{if .Checked}} checked{{end}}> <span>{{.Name}}</span></label>{{end}}
+  </fieldset>
+  <fieldset><legend>Fechas</legend>
+   <label class="fld">Desde <input type="date" name="from" value="{{.From}}"></label>
+   <label class="fld">Hasta <input type="date" name="to" value="{{.To}}"></label>
+  </fieldset>
+ </div>
+</details>
+{{end}}

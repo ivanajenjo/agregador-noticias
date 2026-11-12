@@ -1,0 +1,86 @@
+{{define "content"}}
+<h1>Estado</h1>
+{{template "status_body" .}}
+{{end}}
+
+{{define "status_body"}}
+<div id="estado" hx-get="/fragmentos/estado" hx-trigger="every 15s" hx-swap="outerHTML">
+{{if .Err}}<p class="notice err" role="alert">{{.Err}}</p>{{end}}
+
+<section aria-labelledby="h-act">
+ <h2 id="h-act">Acciones</h2>
+ <div class="actions">
+  {{if .CanIngest}}<button class="btn" hx-post="/api/jobs/ingest" hx-target="next .jobmsg" hx-swap="innerHTML" hx-headers='{"X-Requested-With":"htmx"}'>Ingerir ahora</button><span class="jobmsg" aria-live="polite">{{if .IngestRunning}}<span class="notice ok">Ingesta en curso…</span>{{end}}</span>{{end}}
+  {{if .CanCapture}}<button class="btn" hx-post="/api/jobs/screenshots" hx-target="next .jobmsg" hx-swap="innerHTML" hx-headers='{"X-Requested-With":"htmx"}'>Capturar portadas ahora</button><span class="jobmsg" aria-live="polite">{{if .CaptureRunning}}<span class="notice ok">Captura en curso…</span>{{end}}</span>{{end}}
+ </div>
+ {{range $k, $r := .Last}}<p class="muted small">Última «{{$k}}» desde esta sesión: {{ago $r.At}} — {{if $r.OK}}OK ({{$r.Count}}){{else}}error: {{$r.Message}}{{end}}</p>{{end}}
+</section>
+
+{{if .Stats}}
+<section aria-labelledby="h-st">
+ <h2 id="h-st">Datos</h2>
+ <dl class="stats">
+  <div><dt>Artículos</dt><dd>{{.Stats.Articles}}</dd></div>
+  <div><dt>Con embeddings</dt><dd>{{.Stats.Embedded}}</dd></div>
+  <div><dt>Pendientes</dt><dd>{{.Stats.PendingEmbed}}</dd></div>
+  <div><dt>Capturas</dt><dd>{{.Stats.Screenshots}}</dd></div>
+  <div><dt>Base de datos</dt><dd>{{bytes .Stats.DBBytes}}</dd></div>
+  <div><dt>Capturas en disco</dt><dd>{{bytes .Stats.ShotsBytes}}</dd></div>
+  {{if not (isZero .Stats.NewestArticle)}}<div><dt>Último artículo</dt><dd>{{ago .Stats.NewestArticle}}</dd></div>{{end}}
+ </dl>
+</section>
+{{end}}
+
+<section aria-labelledby="h-llm">
+ <h2 id="h-llm">Modelo de lenguaje</h2>
+ {{if .HaveLLM}}
+ <ul class="llm">
+  <li><span class="dot {{if .Chat.OK}}ok{{else}}bad{{end}}"></span> <strong>Chat</strong>: {{if .Chat.OK}}disponible{{else}}no disponible{{end}}{{if .Chat.Detail}} <span class="muted">· {{.Chat.Detail}}</span>{{end}}</li>
+  <li><span class="dot {{if .Embed.OK}}ok{{else}}bad{{end}}"></span> <strong>Embeddings</strong>: {{if .Embed.OK}}disponible{{else}}no disponible{{end}}{{if .Embed.Detail}} <span class="muted">· {{.Embed.Detail}}</span>{{end}}</li>
+ </ul>
+ {{else}}<p class="muted">Sin información del modelo.</p>{{end}}
+</section>
+
+<section aria-labelledby="h-src">
+ <h2 id="h-src">Fuentes</h2>
+ {{if not .Sources}}<p class="empty">Sin fuentes.</p>{{else}}
+ <table class="rtable">
+  <thead><tr><th>Medio</th><th>Feed</th><th>Último OK</th><th>Último error</th><th>Artículos</th></tr></thead>
+  <tbody>
+  {{range .Sources}}{{$s := .Source}}
+   {{range .Feeds}}
+   <tr>
+    <td data-label="Medio"><strong>{{$s.Name}}</strong></td>
+    <td data-label="Feed">{{if .Section}}{{.Section}}{{else}}<span class="muted">{{trunc 40 .FeedURL}}</span>{{end}}</td>
+    <td data-label="Último OK">{{if isZero .LastOK}}<span class="muted">nunca</span>{{else}}<span class="dot ok"></span> {{ago .LastOK}}{{end}}</td>
+    <td data-label="Último error">{{if .LastError}}<span class="dot bad"></span> {{ago .LastErrorAt}}: {{trunc 120 .LastError}}{{else}}<span class="muted">—</span>{{end}}</td>
+    <td data-label="Artículos">{{.LastCount}}</td>
+   </tr>
+   {{else}}
+   <tr><td data-label="Medio"><strong>{{$s.Name}}</strong></td><td data-label="Feed" colspan="4"><span class="muted">sin estado todavía</span></td></tr>
+   {{end}}
+  {{end}}
+  </tbody>
+ </table>{{end}}
+</section>
+
+<section aria-labelledby="h-jobs">
+ <h2 id="h-jobs">Últimas ejecuciones</h2>
+ {{if not .Jobs}}<p class="empty">Sin ejecuciones registradas.</p>{{else}}
+ <table class="rtable">
+  <thead><tr><th>Tarea</th><th>Inicio</th><th>Resultado</th><th>Mensaje</th></tr></thead>
+  <tbody>
+  {{range .Jobs}}
+   <tr>
+    <td data-label="Tarea"><strong>{{.Job}}</strong></td>
+    <td data-label="Inicio">{{fulltime .StartedAt}}</td>
+    <td data-label="Resultado">{{if isZero .FinishedAt}}<span class="dot warn"></span> en curso{{else if .OK}}<span class="dot ok"></span> OK{{else}}<span class="dot bad"></span> error{{end}}</td>
+    <td data-label="Mensaje">{{trunc 160 .Message}}</td>
+   </tr>
+  {{end}}
+  </tbody>
+ </table>{{end}}
+</section>
+<p class="muted small">Versión {{.Version}}</p>
+</div>
+{{end}}
