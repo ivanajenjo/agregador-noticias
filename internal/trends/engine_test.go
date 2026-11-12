@@ -227,7 +227,7 @@ func TestTrendingScenario(t *testing.T) {
 	rep1, _ := e.Trending(context.Background(), domain.TrendOptions{Now: scenarioNow, MinSources: 1, Limit: 100})
 	found := false
 	for _, tm := range rep1.Terms {
-		if tm.Key == "zafra" || tm.Key == "caso zafra" {
+		if strings.Contains(tm.Key, "zafra") {
 			found = true
 			if tm.Sources != 1 {
 				t.Errorf("%+v", tm)

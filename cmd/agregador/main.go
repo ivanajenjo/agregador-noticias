@@ -23,6 +23,7 @@ import (
 	"github.com/ivanajenjo/agregador-noticias/internal/sched"
 	"github.com/ivanajenjo/agregador-noticias/internal/shot"
 	"github.com/ivanajenjo/agregador-noticias/internal/store"
+	"github.com/ivanajenjo/agregador-noticias/internal/trends"
 	"github.com/ivanajenjo/agregador-noticias/internal/web"
 )
 
@@ -109,6 +110,7 @@ func run(cfgPath string) error {
 	iopts.Concurrency = cfg.Ingest.Concurrency
 	iopts.PerHostDelay = cfg.Ingest.PerHostDelay
 	iopts.FetchFullText = cfg.Ingest.FetchFullText
+	iopts.MaxFullTextPerFeed = cfg.Ingest.FullTextPerFeed
 	iopts.RespectRobots = cfg.Ingest.RespectRobots
 	ing := ingest.New(st, iopts, log)
 
@@ -117,10 +119,7 @@ func run(cfgPath string) error {
 		Width: cfg.Screenshots.Width, Height: cfg.Screenshots.Height, Quality: cfg.Screenshots.Quality,
 		MaxHeight: cfg.Screenshots.MaxHeight, Retention: cfg.Screenshots.Retention, SettleDelay: 2 * time.Second,
 	}
-	if cfg.Screenshots.NoSandbox {
-		b := true
-		sopts.NoSandbox = &b
-	}
+	sopts.NoSandbox = cfg.Screenshots.NoSandbox
 	shots := shot.New(st, sopts, log)
 
 	sc := sched.New(ctx, st, loc, log)
@@ -143,7 +142,11 @@ func run(cfgPath string) error {
 		ingestJob.Spec = cfg.Ingest.Cron
 	}
 	if cfg.Screenshots.Enabled {
-		shotJob.Spec = cfg.Screenshots.Cron
+		if cfg.Screenshots.RemoteURL == "" && shot.DetectChrome() == "" && cfg.Screenshots.ChromePath == "" {
+			log.Warn("screenshots disabled: no Chrome/Chromium found and screenshots.remote_url is empty")
+		} else {
+			shotJob.Spec = cfg.Screenshots.Cron
+		}
 	}
 	for _, j := range []sched.Job{ingestJob, shotJob, cleanupJob} {
 		if err := sc.Add(j); err != nil {
@@ -155,10 +158,12 @@ func run(cfgPath string) error {
 		sc.Trigger(ingestJob) // first fetch right away
 	}
 
+	trendEngine := trends.New(st, trends.Options{})
+
 	// --- web ---
 	handler := web.New(web.Deps{
 		Store: st, Retriever: retriever, Ingestor: ing, Shots: shots, LLM: status,
-		ShotsDir: shotsDir, Log: log,
+		Trends: trendEngine, ShotsDir: shotsDir, Log: log,
 	}, web.Options{BasicAuthUser: cfg.Auth.User, BasicAuthPass: cfg.Auth.Pass, Location: loc, Version: version, EmbedModel: cfg.Embeddings.Model})
 	srv := &http.Server{Addr: cfg.Listen, Handler: handler, ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 2 * time.Minute}
 

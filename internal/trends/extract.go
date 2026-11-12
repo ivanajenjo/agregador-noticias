@@ -22,6 +22,8 @@ type cand struct {
 	// is resolved after the whole corpus has been seen: if the first token
 	// is a known proper noun the full key is kept, otherwise restKey (the
 	// run without its first token, may be empty) replaces it.
+	hash uint64 // FNV-1a of key (phrases only)
+
 	pend     bool
 	restKey  []byte
 	restDisp string
@@ -29,9 +31,19 @@ type cand struct {
 }
 
 type extractor struct {
-	z      tokenizer
-	phrase []byte
-	rest   []byte
+	z          tokenizer
+	phrase     []byte
+	rest       []byte
+	ngramsOnly bool // title n-grams only (second indexing pass)
+}
+
+func fnv64(b []byte) uint64 {
+	h := uint64(14695981039346656037)
+	for _, c := range b {
+		h ^= uint64(c)
+		h *= 1099511628211
+	}
+	return h
 }
 
 func newExtractor(stop map[string]struct{}) *extractor {
@@ -43,7 +55,7 @@ func newExtractor(stop map[string]struct{}) *extractor {
 // (capitalised runs; title+summary). The caller dedups per article.
 func (x *extractor) extract(title, summary string, emit func(*cand)) {
 	x.gen(title, true, emit)
-	if summary != "" {
+	if summary != "" && !x.ngramsOnly {
 		x.gen(summary, false, emit)
 	}
 }
@@ -79,7 +91,7 @@ func (x *extractor) gen(text string, isTitle bool, emit func(*cand)) {
 	// unigrams
 	for i := range toks {
 		t := toks[i]
-		if t.flags&fLong == 0 {
+		if t.flags&fLong == 0 || x.ngramsOnly {
 			continue
 		}
 		c = cand{key: z.key(t), disp: text[t.start:t.end], kind: kindWord, sent: t.flags&fSent != 0, caps: noCaps}
@@ -110,12 +122,12 @@ func (x *extractor) gen(text string, isTitle bool, emit func(*cand)) {
 					}
 					x.phrase = append(x.phrase, z.key(toks[k])...)
 				}
-				c = cand{key: x.phrase, disp: text[toks[i].start:last.end], kind: kindPhrase, caps: noCaps, sent: toks[i].flags&fSent != 0}
+				c = cand{key: x.phrase, disp: text[toks[i].start:last.end], kind: kindPhrase, caps: noCaps, sent: toks[i].flags&fSent != 0, hash: fnv64(x.phrase)}
 				emit(&c)
 			}
 		}
 	}
-	if noCaps {
+	if noCaps || x.ngramsOnly {
 		return
 	}
 	// entities

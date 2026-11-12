@@ -14,6 +14,7 @@ package trends
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -404,59 +405,226 @@ type pending struct {
 	full, rest, first int32
 }
 
-// index tokenises all articles into the dictionary and the article->terms CSR.
+// shard is the work unit of the (parallel) indexing passes: a contiguous
+// range of articles with its own dictionary, merged afterwards.
+type shard struct {
+	lo, hi int
+	d      *dict
+	flat   []int32
+	off    []int32 // len hi-lo+1
+	pend   []pending
+	ng     []uint64 // pass 1: hashes of title n-grams, per article
+	ngOff  []int32
+}
+
+func (d *dict) internString(s string) int32 {
+	if id, ok := d.ids[s]; ok {
+		return id
+	}
+	id := int32(len(d.terms))
+	d.ids[s] = id
+	d.terms = append(d.terms, termInfo{key: s})
+	return id
+}
+
+// index tokenises all articles into the dictionary and the article->terms
+// CSR. Most title n-grams occur exactly once and can never trend or link
+// articles, so they are not interned: pass 1 (parallel) interns unigrams and
+// entities and only records n-gram hashes; after counting hashes, pass 2
+// (parallel, title only, only articles that own a repeated n-gram) interns the
+// n-grams seen more than once. This keeps the dictionary ~10x smaller.
 func (e *Engine) index(ctx context.Context, c *corpus) {
 	n := len(c.arts)
-	d := &dict{ids: make(map[string]int32, n*8), terms: make([]termInfo, 0, n*8)}
+	d := &dict{ids: make(map[string]int32, 1<<12), terms: make([]termInfo, 0, 1<<12)}
 	c.dict = d
-	x := newExtractor(e.stop)
 	c.off = make([]int32, n+1)
-	c.flat = make([]int32, 0, n*24)
-	var pend []pending
-	var cur, art int32
-	emit := func(cd *cand) {
-		if cd.pend {
-			p := pending{art: art, full: d.intern(cd.key), rest: -1}
-			if len(cd.restKey) > 0 {
-				p.rest = d.intern(cd.restKey)
+	workers := runtime.GOMAXPROCS(0)
+	if workers > 8 {
+		workers = 8
+	}
+	if n < 2000 || workers < 1 {
+		workers = 1
+	}
+	shards := make([]*shard, workers)
+	for w := range shards {
+		shards[w] = &shard{lo: n * w / workers, hi: n * (w + 1) / workers}
+	}
+	run := func(fn func(s *shard)) {
+		var wg sync.WaitGroup
+		for _, s := range shards {
+			wg.Add(1)
+			go func(s *shard) { defer wg.Done(); fn(s) }(s)
+		}
+		wg.Wait()
+	}
+
+	// ---- pass 1
+	run(func(s *shard) {
+		x := newExtractor(e.stop)
+		ld := &dict{ids: make(map[string]int32, 1<<12), terms: make([]termInfo, 0, 1<<12)}
+		s.d = ld
+		m := s.hi - s.lo
+		s.off = make([]int32, m+1)
+		s.ngOff = make([]int32, m+1)
+		s.flat = make([]int32, 0, m*14)
+		s.ng = make([]uint64, 0, m*10)
+		var cur int32
+		var art int32
+		emit := func(cd *cand) {
+			if cd.pend {
+				p := pending{art: art, full: ld.intern(cd.key), rest: -1}
+				if len(cd.restKey) > 0 {
+					p.rest = ld.intern(cd.restKey)
+				}
+				p.first = ld.intern(cd.firstKey)
+				s.pend = append(s.pend, p)
+				return
 			}
-			p.first = d.intern(cd.firstKey)
-			pend = append(pend, p)
-			return
+			if cd.kind == kindPhrase {
+				s.ng = append(s.ng, cd.hash)
+				return
+			}
+			id := ld.intern(cd.key)
+			t := &ld.terms[id]
+			if cd.kind > t.kind {
+				t.kind = cd.kind
+			}
+			switch cd.stat {
+			case statCapMid:
+				t.capMid++
+			case statLowMid:
+				t.lowMid++
+			}
+			if t.stamp != cur {
+				t.stamp = cur
+				s.flat = append(s.flat, id)
+			}
 		}
-		id := d.intern(cd.key)
-		t := &d.terms[id]
-		if cd.kind > t.kind {
-			t.kind = cd.kind
+		for i := s.lo; i < s.hi; i++ {
+			if i&1023 == 0 && ctx.Err() != nil {
+				return
+			}
+			art, cur = int32(i), int32(i+1)
+			s.off[i-s.lo] = int32(len(s.flat))
+			s.ngOff[i-s.lo] = int32(len(s.ng))
+			a := &c.arts[i]
+			x.extract(a.Title, a.Summary, emit)
 		}
-		switch cd.stat {
-		case statCapMid:
-			t.capMid++
-		case statLowMid:
-			t.lowMid++
-		}
-		if t.stamp != cur {
-			t.stamp = cur
-			c.flat = append(c.flat, id)
-		}
-	}
-	for i := range c.arts {
-		if i&1023 == 0 && ctx.Err() != nil {
-			return
-		}
-		art = int32(i)
-		cur = int32(i + 1)
-		c.off[i] = int32(len(c.flat))
-		a := &c.arts[i]
-		x.extract(a.Title, a.Summary, emit)
-	}
-	c.off[n] = int32(len(c.flat))
-	if len(pend) == 0 {
+		s.off[m] = int32(len(s.flat))
+		s.ngOff[m] = int32(len(s.ng))
+	})
+	if ctx.Err() != nil {
 		return
 	}
+	// count n-gram hashes (saturating at 2) in a hashed counter table
+	tbits := uint(16)
+	for (1<<tbits) < n*200 && tbits < 23 {
+		tbits++
+	}
+	table := make([]uint8, 1<<tbits)
+	idx := func(h uint64) uint64 { return (h ^ h>>29) & (1<<tbits - 1) }
+	for _, s := range shards {
+		for _, h := range s.ng {
+			if k := idx(h); table[k] < 2 {
+				table[k]++
+			}
+		}
+	}
+
+	// merge pass 1
+	var pend []pending
+	c.flat = make([]int32, 0, n*14)
+	for _, s := range shards {
+		remap := make([]int32, len(s.d.terms))
+		for lid, t := range s.d.terms {
+			gid := d.internString(t.key)
+			remap[lid] = gid
+			g := &d.terms[gid]
+			if t.kind > g.kind {
+				g.kind = t.kind
+			}
+			g.capMid += t.capMid
+			g.lowMid += t.lowMid
+		}
+		for i := 0; i < s.hi-s.lo; i++ {
+			c.off[s.lo+i] = int32(len(c.flat))
+			for _, lid := range s.flat[s.off[i]:s.off[i+1]] {
+				c.flat = append(c.flat, remap[lid])
+			}
+		}
+		for _, p := range s.pend {
+			q := pending{art: p.art, full: remap[p.full], rest: -1, first: remap[p.first]}
+			if p.rest >= 0 {
+				q.rest = remap[p.rest]
+			}
+			pend = append(pend, q)
+		}
+	}
+	c.off[n] = int32(len(c.flat))
+
+	// ---- pass 2: repeated n-grams (title only)
+	run(func(s *shard) {
+		x := newExtractor(e.stop)
+		x.ngramsOnly = true
+		ld := &dict{ids: make(map[string]int32, 1<<10), terms: make([]termInfo, 0, 1<<10)}
+		s.d = ld
+		m := s.hi - s.lo
+		s.flat = s.flat[:0]
+		s.off = make([]int32, m+1)
+		var cur int32
+		emit := func(cd *cand) {
+			if cd.kind != kindPhrase || table[idx(cd.hash)] < 2 {
+				return
+			}
+			id := ld.intern(cd.key)
+			if t := &ld.terms[id]; t.stamp != cur {
+				t.stamp = cur
+				s.flat = append(s.flat, id)
+			}
+		}
+		for i := s.lo; i < s.hi; i++ {
+			if i&1023 == 0 && ctx.Err() != nil {
+				return
+			}
+			cur = int32(i + 1)
+			s.off[i-s.lo] = int32(len(s.flat))
+			rep := false
+			for _, h := range s.ng[s.ngOff[i-s.lo]:s.ngOff[i-s.lo+1]] {
+				if table[idx(h)] >= 2 {
+					rep = true
+					break
+				}
+			}
+			if rep {
+				x.extract(c.arts[i].Title, "", emit)
+			}
+		}
+		s.off[m] = int32(len(s.flat))
+	})
+	if ctx.Err() != nil {
+		return
+	}
+	extra := make([][]int32, n)
+	nExtra := 0
+	for _, s := range shards {
+		remap := make([]int32, len(s.d.terms))
+		for lid, t := range s.d.terms {
+			gid := d.internString(t.key)
+			remap[lid] = gid
+			if d.terms[gid].kind < kindPhrase {
+				d.terms[gid].kind = kindPhrase
+			}
+		}
+		for i := 0; i < s.hi-s.lo; i++ {
+			for _, lid := range s.flat[s.off[i]:s.off[i+1]] {
+				extra[s.lo+i] = append(extra[s.lo+i], remap[lid])
+				nExtra++
+			}
+		}
+	}
+
 	// Resolve sentence-initial capitalised runs now that the capitalisation
 	// statistics of the whole corpus are known.
-	extra := make([][]int32, n)
 	for _, p := range pend {
 		f := d.terms[p.first]
 		use := p.rest
@@ -468,8 +636,12 @@ func (e *Engine) index(ctx context.Context, c *corpus) {
 		}
 		d.terms[use].kind = kindEntity
 		extra[p.art] = append(extra[p.art], use)
+		nExtra++
 	}
-	flat := make([]int32, 0, len(c.flat)+len(pend))
+	if nExtra == 0 {
+		return
+	}
+	flat := make([]int32, 0, len(c.flat)+nExtra)
 	off := make([]int32, n+1)
 	for i := 0; i < n; i++ {
 		off[i] = int32(len(flat))

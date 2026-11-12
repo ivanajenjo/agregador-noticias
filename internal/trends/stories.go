@@ -14,22 +14,33 @@ import (
 
 // Story clustering
 //
-// Each article of the window gets a sparse vector over its terms (entities,
-// title bigrams/trigrams and unigrams) weighted by IDF computed over
-// window+baseline (idf = ln((N+1)/(df+1)), x1.3 for entities, x1.15 for
-// phrases) times a burst factor min(1, max(0.15, lift/3)), where lift is the
-// smoothed window/baseline rate ratio (so background chatter such as
-// "Gobierno" weighs little and event terms such as "dana" full), and
-// L2-normalised. Terms present in <2 window articles (they can't
-// link anything) or in more than max(40, 12% of the window) articles
-// (background chatter) are ignored.
+// Every term gets a global weight W(t) = idf * kind * burst where
 //
-// Articles are processed in time order (single pass, "leader" clustering):
-// each one joins the best existing cluster if the cosine between its vector
-// and the cluster centroid (sum of unit vectors) is >= storySim, the cluster
-// was updated in the last 36 h, spans < 72 h and has < storyMaxSize articles;
-// otherwise it starts a new cluster. A merge sweep then joins small
-// fragments whose centroids are >= storyMerge similar.
+//	idf   = ln((N+1)/(df+1)), df over window+baseline, N = articles there
+//	kind  = 1.3 for entities, 0.8 for plain n-grams, 1 for words
+//	burst = min(1, max(0.15, lift/3)), lift = smoothed window/baseline rate
+//	        ratio, so background chatter ("Gobierno", "Pedro Sánchez") weighs
+//	        little and event terms ("dana") full.
+//
+// Nested terms inside one article ("pedro" in "pedro sanchez") count once: only
+// the longest is kept.
+//
+// Terms present in <2 window articles (they cannot link anything) or in more
+// than max(40, 12% of the window) articles are ignored.
+//
+// Articles are processed in time order (single pass, single-link with a
+// centroid guard). The evidence that two articles are about the same event
+// is the summed weight of the terms they share:
+//
+//	ev(a,b) = sum_{t in a∩b} W(t)
+//
+// An article is linked to an earlier article within 36 h if ev >= E, with
+// E = 0.9 ln(N+1) (two shared specific terms such as "dana"+"valencia"). It
+// then joins that article's cluster provided the cluster is <72 h old in
+// total, has <120 articles and the article is typical of the whole cluster:
+// sum_t W(t) * (members containing t)/|cluster| >= E/2 (this stops a cluster
+// from drifting through one shared name). If the article is linked to several
+// clusters in which it is typical, they are merged.
 //
 // Clusters with >= MinSources distinct outlets are stories; their score is
 //
@@ -37,44 +48,31 @@ import (
 //
 // where age is measured from the latest article of the cluster.
 const (
-	storySim        = 0.27
-	storyMerge      = 0.40
-	storyMaxSize    = 120
-	storyGap        = 36 * time.Hour
-	storySpan       = 72 * time.Hour
-	storyMinIDF     = 1.2
-	storyHalfLife   = 12 * time.Hour
-	storyTopTerms   = 4
-	storyMaxDFFloor = 40
-	storyMaxDFFrac  = 0.12
-	storyFullLift   = 3.0  // window/baseline rate ratio at which a term gets full weight
-	storyMinBurst   = 0.15 // weight floor for background terms
+	storyMaxSize     = 120
+	storyGap         = 36 * time.Hour
+	storySpan        = 72 * time.Hour
+	storyMinIDF      = 1.2
+	storyHalfLife    = 12 * time.Hour
+	storyTopTerms    = 4
+	storyMaxDFFloor  = 40
+	storyMaxDFFrac   = 0.12
+	storyMaxDFAbs    = 400
+	storyFullLift    = 3.0  // window/baseline rate ratio at which a term gets full weight
+	storyMinBurst    = 0.15 // weight floor for background terms
+	storyEvidence    = 0.9  // E = storyEvidence * ln(N+1)
+	storyScanPerTerm = 250  // max earlier articles examined per term
 )
 
 type svec struct {
-	ids  []int32
-	w    []float32 // unit-normalised weights
-	norm float32   // raw L2 norm (raw weight = w*norm)
+	ids []int32
+	w   []float32 // W(t)
 }
 
 type cluster struct {
-	members     []int32 // window article indexes
-	cent        map[int32]float32
-	sumsq       float64
+	members     []int32         // window-relative article indexes
+	cnt         map[int32]int32 // term -> members containing it
 	first, last int64
 	dead        bool
-}
-
-func (cl *cluster) addVec(v *svec, tc map[int32][]int32, id int32) {
-	for k, t := range v.ids {
-		old, ok := cl.cent[t]
-		if !ok {
-			tc[t] = append(tc[t], id)
-		}
-		nv := old + v.w[k]
-		cl.sumsq += float64(nv)*float64(nv) - float64(old)*float64(old)
-		cl.cent[t] = nv
-	}
 }
 
 // Stories implements domain.TrendProvider.
@@ -110,150 +108,182 @@ func (e *Engine) computeStories(ctx context.Context, o domain.TrendOptions) ([]d
 			}
 		}
 	}
-	maxDF := int32(math.Max(storyMaxDFFloor, storyMaxDFFrac*float64(nWin)))
+	maxDF := int32(math.Min(storyMaxDFAbs, math.Max(storyMaxDFFloor, storyMaxDFFrac*float64(nWin))))
 	N := float64(end - ib)
-
+	E := storyEvidence * math.Log(N+1)
 	n1, n2 := float64(nWin), float64(iw-ib)
+
+	weight := make([]float32, nT) // W(t); 0 = ignored
+	for t := 0; t < nT; t++ {
+		if winDF[t] < 2 || winDF[t] > maxDF {
+			continue
+		}
+		idf := math.Log((N + 1) / (float64(allDF[t]) + 1))
+		if idf < storyMinIDF {
+			continue
+		}
+		if n2 > 0 {
+			lift := (float64(winDF[t]) + .5) / n1 / ((float64(allDF[t]-winDF[t]) + .5) / n2)
+			idf *= math.Min(1, math.Max(storyMinBurst, lift/storyFullLift))
+		}
+		switch c.dict.terms[t].kind {
+		case kindEntity:
+			idf *= 1.3
+		case kindPhrase:
+			idf *= 0.8
+		}
+		weight[t] = float32(idf)
+	}
 	vecs := make([]svec, nWin)
 	for i := 0; i < nWin; i++ {
-		a := iw + i
 		v := &vecs[i]
-		var sq float64
-		for _, t := range c.terms(a) {
-			if winDF[t] < 2 || winDF[t] > maxDF {
-				continue
+		for _, t := range c.terms(iw + i) {
+			if weight[t] > 0 {
+				v.ids = append(v.ids, t)
+				v.w = append(v.w, weight[t])
 			}
-			idf := math.Log((N + 1) / (float64(allDF[t]) + 1))
-			if idf < storyMinIDF {
-				continue
-			}
-			if n2 > 0 {
-				// burstiness: background terms (rate in the window ~ rate in the
-				// baseline) are down-weighted, event terms keep full weight.
-				lift := (float64(winDF[t]) + .5) / n1 / ((float64(allDF[t]-winDF[t]) + .5) / n2)
-				idf *= math.Min(1, math.Max(storyMinBurst, lift/storyFullLift))
-			}
-			switch c.dict.terms[t].kind {
-			case kindEntity:
-				idf *= 1.3
-			case kindPhrase:
-				idf *= 1.15
-			}
-			v.ids = append(v.ids, t)
-			v.w = append(v.w, float32(idf))
-			sq += idf * idf
 		}
-		if sq > 0 {
-			v.norm = float32(math.Sqrt(sq))
-			for k := range v.w {
-				v.w[k] /= v.norm
+		// nested terms ("pedro", "sanchez" inside "pedro sanchez") are one
+		// piece of evidence, not several: keep only the longest.
+		for _, u := range v.ids {
+			uk := c.dict.terms[u].key
+			if !strings.Contains(uk, " ") {
+				continue
+			}
+			for k := 0; k < len(v.ids); k++ {
+				if v.ids[k] != u && tokenSubterm(c.dict.terms[v.ids[k]].key, uk) {
+					v.ids = append(v.ids[:k], v.ids[k+1:]...)
+					v.w = append(v.w[:k], v.w[k+1:]...)
+					k--
+				}
 			}
 		}
 	}
 
-	// ---- single pass clustering
+	// ---- clustering
 	var clusters []*cluster
-	tc := map[int32][]int32{} // term -> clusters containing it
-	acc := map[int32]float64{}
+	of := make([]int32, nWin) // article -> cluster id
+	for i := range of {
+		of[i] = -1
+	}
+	ev := make([]float64, nWin)
+	var touched []int32
+	typical := func(v *svec, cl *cluster) bool {
+		s := 0.0
+		for k, t := range v.ids {
+			s += float64(v.w[k]) * float64(cl.cnt[t])
+		}
+		return s/float64(len(cl.members)) >= E/2
+	}
+	add := func(cl *cluster, i int32) {
+		cl.members = append(cl.members, i)
+		for _, t := range vecs[i].ids {
+			cl.cnt[t]++
+		}
+		at := c.at[iw+int(i)]
+		if at < cl.first {
+			cl.first = at
+		}
+		if at > cl.last {
+			cl.last = at
+		}
+	}
 	for i := 0; i < nWin; i++ {
 		v := &vecs[i]
 		if len(v.ids) == 0 {
 			continue
 		}
+		if i&255 == 0 && ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 		at := c.at[iw+i]
-		for k := range acc {
-			delete(acc, k)
-		}
+		touched = touched[:0]
 		for k, t := range v.ids {
-			for _, cid := range tc[t] {
-				cl := clusters[cid]
-				if cl.dead || len(cl.members) >= storyMaxSize ||
-					time.Duration(at-cl.last)*time.Second > storyGap || time.Duration(at-cl.first)*time.Second > storySpan {
-					continue
+			p := c.post(t)
+			pos := lowerBound(p, int32(iw+i)) // entries before this article are p[:pos]
+			scanned := 0
+			for q := pos - 1; q >= 0 && scanned < storyScanPerTerm; q-- {
+				j := int(p[q]) - iw
+				if j < 0 {
+					break
 				}
-				acc[cid] += float64(v.w[k]) * float64(cl.cent[t])
-			}
-		}
-		best, bestCos := int32(-1), 0.0
-		for cid, dot := range acc {
-			cs := dot / math.Sqrt(clusters[cid].sumsq)
-			if cs > bestCos || (cs == bestCos && cid < best) {
-				best, bestCos = cid, cs
-			}
-		}
-		if best >= 0 && bestCos >= storySim {
-			cl := clusters[best]
-			cl.members = append(cl.members, int32(i))
-			cl.addVec(v, tc, best)
-			cl.last = at
-			continue
-		}
-		cl := &cluster{cent: map[int32]float32{}, first: at, last: at, members: []int32{int32(i)}}
-		id := int32(len(clusters))
-		clusters = append(clusters, cl)
-		cl.addVec(v, tc, id)
-	}
-
-	// ---- merge sweep: small fragments into similar clusters
-	order := make([]int32, 0, len(clusters))
-	for i, cl := range clusters {
-		if len(cl.members) > 0 && !cl.dead {
-			order = append(order, int32(i))
-		}
-	}
-	sort.Slice(order, func(a, b int) bool {
-		la, lb := len(clusters[order[a]].members), len(clusters[order[b]].members)
-		if la != lb {
-			return la < lb
-		}
-		return order[a] < order[b]
-	})
-	for _, sid := range order {
-		s := clusters[sid]
-		if s.dead {
-			continue
-		}
-		for k := range acc {
-			delete(acc, k)
-		}
-		for t, wt := range s.cent {
-			for _, cid := range tc[t] {
-				if cid == sid || clusters[cid].dead {
-					continue
+				if time.Duration(at-c.at[iw+j])*time.Second > storyGap {
+					break
 				}
-				acc[cid] += float64(wt) * float64(clusters[cid].cent[t])
+				scanned++
+				if ev[j] == 0 {
+					touched = append(touched, int32(j))
+				}
+				ev[j] += float64(v.w[k])
 			}
 		}
-		best, bestCos := int32(-1), 0.0
-		for cid, dot := range acc {
-			o := clusters[cid]
-			if len(o.members)+len(s.members) > storyMaxSize {
+		// best evidence per cluster
+		type link struct {
+			cid int32
+			ev  float64
+		}
+		var links []link
+		for _, j := range touched {
+			if e := ev[j]; e >= E && of[j] >= 0 {
+				found := false
+				for k := range links {
+					if links[k].cid == of[j] {
+						if e > links[k].ev {
+							links[k].ev = e
+						}
+						found = true
+						break
+					}
+				}
+				if !found {
+					links = append(links, link{of[j], e})
+				}
+			}
+			ev[j] = 0
+		}
+		sort.Slice(links, func(a, b int) bool {
+			if links[a].ev != links[b].ev {
+				return links[a].ev > links[b].ev
+			}
+			return links[a].cid < links[b].cid
+		})
+		var target *cluster
+		tid := int32(-1)
+		for _, l := range links {
+			cl := clusters[l.cid]
+			if cl.dead || !typical(v, cl) {
 				continue
 			}
-			if gapSecs(s, o) > int64(storyGap/time.Second) || maxI(s.last, o.last)-minI(s.first, o.first) > int64(storySpan/time.Second) {
+			if target == nil {
+				if len(cl.members) >= storyMaxSize || at-cl.first > int64(storySpan/time.Second) {
+					continue
+				}
+				target, tid = cl, l.cid
 				continue
 			}
-			cs := dot / (math.Sqrt(s.sumsq) * math.Sqrt(o.sumsq))
-			if cs > bestCos || (cs == bestCos && cid < best) {
-				best, bestCos = cid, cs
+			// article is typical of two clusters: same story, merge
+			if len(target.members)+len(cl.members) >= storyMaxSize ||
+				maxI(target.last, cl.last)-minI(target.first, cl.first) > int64(storySpan/time.Second) {
+				continue
 			}
+			for _, m := range cl.members {
+				of[m] = tid
+				target.members = append(target.members, m)
+			}
+			for t, n := range cl.cnt {
+				target.cnt[t] += n
+			}
+			target.first, target.last = minI(target.first, cl.first), maxI(target.last, cl.last)
+			cl.dead = true
+			cl.members = nil
 		}
-		if best >= 0 && bestCos >= storyMerge {
-			o := clusters[best]
-			o.members = append(o.members, s.members...)
-			for t, wt := range s.cent {
-				if _, ok := o.cent[t]; !ok {
-					tc[t] = append(tc[t], best)
-				}
-				o.cent[t] += wt
-			}
-			o.sumsq = 0
-			for _, x := range o.cent {
-				o.sumsq += float64(x) * float64(x)
-			}
-			o.first, o.last = minI(o.first, s.first), maxI(o.last, s.last)
-			s.dead = true
+		if target == nil {
+			target = &cluster{cnt: map[int32]int32{}, first: at, last: at}
+			tid = int32(len(clusters))
+			clusters = append(clusters, target)
 		}
+		of[i] = tid
+		add(target, int32(i))
 	}
 
 	// ---- build stories
@@ -277,7 +307,7 @@ func (e *Engine) computeStories(ctx context.Context, o domain.TrendOptions) ([]d
 			continue
 		}
 		p := pre{cl: cl}
-		p.terms = topClusterTerms(c, vecs, cl)
+		p.terms = topClusterTerms(c, weight, cl)
 		allIDs = append(allIDs, p.terms...)
 		pres = append(pres, p)
 	}
@@ -357,16 +387,6 @@ func (e *Engine) computeStories(ctx context.Context, o domain.TrendOptions) ([]d
 	return stories, nil
 }
 
-func gapSecs(a, b *cluster) int64 {
-	if a.last < b.first {
-		return b.first - a.last
-	}
-	if b.last < a.first {
-		return a.first - b.last
-	}
-	return 0
-}
-
 func minI(a, b int64) int64 {
 	if a < b {
 		return a
@@ -381,37 +401,20 @@ func maxI(a, b int64) int64 {
 }
 
 // topClusterTerms picks up to storyTopTerms terms shared by several members,
-// preferring specific (high raw weight), widely shared and multi-word terms,
+// preferring specific (high weight), widely shared and multi-word terms,
 // without listing a term next to one that contains it.
-func topClusterTerms(c *corpus, vecs []svec, cl *cluster) []int32 {
-	type tw struct {
-		cnt int
-		raw float64
-	}
-	m := map[int32]*tw{}
-	for _, mem := range cl.members {
-		v := &vecs[mem]
-		for k, t := range v.ids {
-			x := m[t]
-			if x == nil {
-				x = &tw{raw: float64(v.w[k]) * float64(v.norm)}
-				m[t] = x
-			}
-			x.cnt++
-		}
-	}
+func topClusterTerms(c *corpus, w []float32, cl *cluster) []int32 {
 	type sc struct {
 		id    int32
 		score float64
-		cnt   int
+		cnt   int32
 	}
 	var all []sc
-	for t, x := range m {
-		if x.cnt < 2 {
+	for t, n := range cl.cnt {
+		if n < 2 {
 			continue
 		}
-		s := float64(x.cnt) * x.raw
-		all = append(all, sc{t, s, x.cnt})
+		all = append(all, sc{t, float64(n) * float64(w[t]), n})
 	}
 	sort.Slice(all, func(i, j int) bool {
 		if all[i].score != all[j].score {
@@ -449,23 +452,19 @@ func topClusterTerms(c *corpus, vecs []svec, cl *cluster) []int32 {
 	return out
 }
 
-// representative returns the headline most similar to the centroid, with a
-// mild preference for short titles.
+// representative returns the headline most typical of the cluster (summed
+// weight of its terms shared with the other members), with a mild
+// preference for short titles.
 func representative(c *corpus, vecs []svec, cl *cluster, iw int) string {
 	bestA, bestS := int32(-1), math.Inf(-1)
-	cn := math.Sqrt(cl.sumsq)
 	for _, mem := range cl.members {
 		v := &vecs[mem]
-		dot := 0.0
+		s := 0.0
 		for k, t := range v.ids {
-			dot += float64(v.w[k]) * float64(cl.cent[t])
-		}
-		cs := 0.0
-		if cn > 0 {
-			cs = dot / cn
+			s += float64(v.w[k]) * float64(cl.cnt[t]-1)
 		}
 		a := int32(iw) + mem
-		s := cs - 0.001*float64(len([]rune(c.arts[a].Title)))
+		s = s/float64(len(cl.members)) - 0.01*float64(len([]rune(c.arts[a].Title)))
 		if s > bestS || (s == bestS && a < bestA) {
 			bestA, bestS = a, s
 		}

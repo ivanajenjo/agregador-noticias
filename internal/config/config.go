@@ -25,14 +25,15 @@ type Config struct {
 	} `yaml:"auth"`
 
 	Ingest struct {
-		Enabled       bool          `yaml:"enabled"`
-		Cron          string        `yaml:"cron"` // robfig spec, TZ applied
-		Timeout       time.Duration `yaml:"timeout"`
-		Concurrency   int           `yaml:"concurrency"`
-		PerHostDelay  time.Duration `yaml:"per_host_delay"`
-		FetchFullText bool          `yaml:"fetch_full_text"`
-		RespectRobots bool          `yaml:"respect_robots"`
-		UserAgent     string        `yaml:"user_agent"`
+		Enabled         bool          `yaml:"enabled"`
+		Cron            string        `yaml:"cron"` // robfig spec, TZ applied
+		Timeout         time.Duration `yaml:"timeout"`
+		Concurrency     int           `yaml:"concurrency"`
+		PerHostDelay    time.Duration `yaml:"per_host_delay"`
+		FetchFullText   bool          `yaml:"fetch_full_text"`
+		FullTextPerFeed int           `yaml:"full_text_per_feed"` // cap of page fetches per feed and run
+		RespectRobots   bool          `yaml:"respect_robots"`
+		UserAgent       string        `yaml:"user_agent"`
 	} `yaml:"ingest"`
 
 	Screenshots struct {
@@ -45,7 +46,7 @@ type Config struct {
 		Quality    int           `yaml:"quality"`
 		MaxHeight  int           `yaml:"max_height"`
 		Retention  time.Duration `yaml:"retention"`
-		NoSandbox  bool          `yaml:"no_sandbox"`
+		NoSandbox  *bool         `yaml:"no_sandbox"` // nil = automatic
 	} `yaml:"screenshots"`
 
 	Embeddings struct {
@@ -80,8 +81,9 @@ func Default() Config {
 	c.Ingest.Enabled = true
 	c.Ingest.Cron = "*/30 * * * *"
 	c.Ingest.Timeout = 20 * time.Second
-	c.Ingest.Concurrency = 3
-	c.Ingest.PerHostDelay = 2 * time.Second
+	c.Ingest.Concurrency = 6
+	c.Ingest.PerHostDelay = time.Second
+	c.Ingest.FullTextPerFeed = 12
 	c.Ingest.FetchFullText = true
 	c.Ingest.RespectRobots = true
 	c.Ingest.UserAgent = "agregador-noticias/2.0 (personal news aggregator)"
@@ -139,6 +141,11 @@ func applyEnv(c *Config, get func(string) string) {
 			*dst = v
 		}
 	}
+	flt := func(key string, dst *float64) {
+		if v, err := strconv.ParseFloat(get("AGREGADOR_"+key), 64); err == nil {
+			*dst = v
+		}
+	}
 	str("LISTEN", &c.Listen)
 	str("DATA_DIR", &c.DataDir)
 	str("SOURCES_FILE", &c.SourcesFile)
@@ -152,7 +159,23 @@ func applyEnv(c *Config, get func(string) string) {
 	str("SCREENSHOTS_CRON", &c.Screenshots.Cron)
 	str("SCREENSHOTS_CHROME_PATH", &c.Screenshots.ChromePath)
 	str("SCREENSHOTS_REMOTE_URL", &c.Screenshots.RemoteURL)
-	boolean("SCREENSHOTS_NO_SANDBOX", &c.Screenshots.NoSandbox)
+	if v, err := strconv.ParseBool(get("AGREGADOR_SCREENSHOTS_NO_SANDBOX")); err == nil {
+		c.Screenshots.NoSandbox = &v
+	}
+	num("SCREENSHOTS_WIDTH", &c.Screenshots.Width)
+	num("SCREENSHOTS_HEIGHT", &c.Screenshots.Height)
+	num("SCREENSHOTS_MAX_HEIGHT", &c.Screenshots.MaxHeight)
+	num("INGEST_CONCURRENCY", &c.Ingest.Concurrency)
+	num("INGEST_FULL_TEXT_PER_FEED", &c.Ingest.FullTextPerFeed)
+	dur("INGEST_TIMEOUT", &c.Ingest.Timeout)
+	dur("INGEST_PER_HOST_DELAY", &c.Ingest.PerHostDelay)
+	boolean("INGEST_FETCH_FULL_TEXT", &c.Ingest.FetchFullText)
+	boolean("INGEST_RESPECT_ROBOTS", &c.Ingest.RespectRobots)
+	str("INGEST_USER_AGENT", &c.Ingest.UserAgent)
+	num("EMBEDDINGS_BATCH_SIZE", &c.Embeddings.BatchSize)
+	dur("EMBEDDINGS_INTERVAL", &c.Embeddings.Interval)
+	flt("CHAT_TEMPERATURE", &c.Chat.Temperature)
+	num("CHAT_MAX_TOKENS", &c.Chat.MaxTokens)
 	dur("SCREENSHOTS_RETENTION", &c.Screenshots.Retention)
 	num("SCREENSHOTS_QUALITY", &c.Screenshots.Quality)
 	str("EMBEDDINGS_BASE_URL", &c.Embeddings.BaseURL)

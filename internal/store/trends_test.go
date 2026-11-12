@@ -40,4 +40,3 @@ func TestArticleTexts(t *testing.T) {
 		t.Fatal(none, err)
 	}
 }
-
