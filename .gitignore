@@ -1,3 +1,7 @@
 node_modules
-capturas/
 dist/
+data/
+*.db
+*.db-*
+/agregador
+.env
