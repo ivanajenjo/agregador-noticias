@@ -1,0 +1,39 @@
+{{define "head"}}<link rel="stylesheet" href="/static/profile.css?v=1">{{end}}
+
+{{define "content"}}
+<h1>Medios</h1>
+<p class="lead-sm">Una ficha por medio con su volumen, sus horarios y su posición frente al resto. Todas las cifras son descriptivas; no hay clasificación de calidad.</p>
+<p class="pf-caveat">La línea editorial (izquierda, centro, derecha…) es una <strong>etiqueta subjetiva</strong>, editable en <code>sources.yaml</code>. No es una medida objetiva.</p>
+{{if .Err}}<p class="notice err" role="alert">{{.Err}}</p>{{else}}
+<form class="pf-controls" method="get" action="/medios">
+ <label>Ordenar por<select name="orden">{{$s := .Sort}}{{range .Sorts}}<option value="{{.Key}}"{{if eq .Key $s}} selected{{end}}>{{.Label}}</option>{{end}}</select></label>
+ <label>Tipo<select name="tipo"><option value="">Todos</option>{{$k := .Kind}}{{range .Kinds}}<option{{if eq . $k}} selected{{end}}>{{.}}</option>{{end}}</select></label>
+ <label>Región<select name="region"><option value="">Todas</option>{{$r := .Region}}{{range .Regions}}<option{{if eq . $r}} selected{{end}}>{{.}}</option>{{end}}</select></label>
+ <label>Línea<select name="linea"><option value="">Todas</option>{{$l := .Lean}}{{range .Leans}}<option{{if eq . $l}} selected{{end}}>{{.}}</option>{{end}}</select></label>
+ <button type="submit">Aplicar</button>
+</form>
+<p class="pf-n">{{.Total}} {{if eq .Total 1}}medio{{else}}medios{{end}} · {{num .Articles}} artículos en los últimos 30 días · calculado a las {{clock .Generated}}.</p>
+{{if .Cards}}
+<ul class="pf-grid">
+{{range .Cards}}
+ <li class="pf-card">
+  <h2><a href="{{.URL}}">{{.Source.Name}}</a></h2>
+  <div class="row"><span>{{if .Source.Leaning}}<span class="badge {{.LeanCls}}">{{.Source.Leaning}}</span>{{else}}<span class="badge">Sin clasificar</span>{{end}}</span>
+   <span class="muted small">{{.Meta}}</span></div>
+  <div class="row"><span><strong>{{.PerDayTx}}</strong> <span class="muted small">artículos/día (14 d, n={{num .Total14}})</span></span>{{.Spark}}</div>
+  <div class="row small muted"><span>Último: {{ago .Last}}</span><span><i class="dot {{.Health}}" aria-hidden="true"></i> {{.HealthTx}}</span></div>
+ </li>
+{{end}}
+</ul>
+{{else}}<p class="muted">Ningún medio coincide con los filtros, o todavía no hay medios activos.</p>{{end}}
+
+{{if .Pick}}
+<section class="pf-sec"><h2>Comparar medios</h2>
+<form class="pf-pick" method="get" action="/medios/comparar">
+ {{$p := .Pick}}
+ {{range $i, $n := $.Slots}}<label class="sr" for="cmp-{{$n}}">Medio {{$n}}</label><select id="cmp-{{$n}}" name="{{$n}}"><option value="">{{if lt $i 2}}Elige medio{{else}}(opcional){{end}}</option>{{range $p}}<option value="{{.ID}}">{{.Name}}</option>{{end}}</select>{{end}}
+ <button type="submit">Comparar</button>
+</form></section>
+{{end}}
+{{end}}
+{{end}}

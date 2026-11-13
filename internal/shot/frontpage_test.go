@@ -2,10 +2,8 @@ package shot
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -41,7 +39,7 @@ a{color:#111;text-decoration:none}
   <article><h2><a href="/economia/inflacion-baja-dos-decimas-en-octubre.html">La inflación baja dos décimas en octubre hasta el 3,1%</a></h2></article>
   <article><h2><a href="/deportes/el-madrid-gana-el-clasico-en-el-descuento.html">El Madrid gana el clásico en el minuto 94 de partido</a></h2></article>
   <article><a href="/cultura/estreno-pelicula-premiada-en-cannes.html"><h2>Estreno de la película premiada en el festival de Cannes</h2></a></article>
-  <article><h2><a href="/externo">Titular que apunta a otro sitio</a></h2><h2><a href="https://otro-medio.example.org/noticia-larga-de-otra-web">Noticia larguísima que enlaza a otro medio distinto</a></h2></article>
+  <article><h2><a href="/corto">Corto</a></h2><h2><a href="https://otro-medio.example.org/noticia-larga-de-otra-web">Noticia larguísima que enlaza a otro medio distinto</a></h2></article>
  </div></main>
  <aside><h3>Lo más leído</h3><ul>
   <li><h3><a href="/sociedad/lluvias-torrenciales-valencia-alerta-roja.html">Lluvias torrenciales en Valencia con alerta roja</a></h3></li>
@@ -56,6 +54,16 @@ type promStore struct {
 	fakeStore
 	mu2   sync.Mutex
 	items map[int64][]domain.FrontItem
+}
+
+func (p *promStore) SaveScreenshot(ctx context.Context, s *domain.Screenshot) error {
+	if err := p.fakeStore.SaveScreenshot(ctx, s); err != nil {
+		return err
+	}
+	p.fakeStore.mu.Lock()
+	s.ID = int64(len(p.fakeStore.shots))
+	p.fakeStore.mu.Unlock()
+	return nil
 }
 
 func (p *promStore) SaveFrontItems(_ context.Context, id int64, it []domain.FrontItem) error {
@@ -91,7 +99,7 @@ func TestIntegrationFrontItems(t *testing.T) {
 	tk := New(st, Options{
 		Sources: []domain.Source{{ID: "x", Homepage: s.URL + "/", Screenshot: true}}, Dir: t.TempDir(), ChromePath: chrome,
 		Width: 1100, Height: 700, MaxHeight: 4000, SettleDelay: 200 * time.Millisecond, PageTimeout: 40 * time.Second,
-	}, slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	}, quiet())
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 	if n, err := tk.RunOnce(ctx); err != nil || n != 1 {
@@ -135,7 +143,7 @@ func TestIntegrationFrontItems(t *testing.T) {
 	if mad.DOMOrder < infl.DOMOrder || cult.W <= 0 || cult.H <= 0 {
 		t.Errorf("dom order/box: %+v %+v", mad, cult)
 	}
-	for _, bad := range []string{"/privacidad/", "/seccion/portada", "/politica/elecciones", "/aviso-legal", "/corto", "/externo"} {
+	for _, bad := range []string{"/privacidad/", "/seccion/portada", "/politica/elecciones", "/aviso-legal", "/corto", "/externo", "/politica/elecciones"} {
 		for p := range byPath {
 			if len(p) >= len(host+bad) && p[:len(host+bad)] == host+bad {
 				t.Errorf("noise item kept: %s", p)
@@ -239,5 +247,4 @@ func TestCanonicalMatchesIngest(t *testing.T) {
 	if siteKey("https://www.bbc.co.uk/a") != "bbc.co.uk" {
 		t.Error(siteKey("https://www.bbc.co.uk/a"))
 	}
-	_ = os.Stdout
 }

@@ -1,0 +1,26 @@
+{{define "head"}}<link rel="stylesheet" href="/static/profile.css?v=1">{{end}}
+
+{{define "content"}}
+<p class="back"><a href="/medios">← Medios</a></p>
+<h1>Comparar medios</h1>
+<p class="pf-caveat">Las etiquetas de línea editorial son <strong>subjetivas</strong> (editables en <code>sources.yaml</code>). Las cifras son descriptivas, no una clasificación de calidad; las marcadas en ámbar tienen una muestra pequeña.</p>
+<form class="pf-pick" method="get" action="/medios/comparar">
+ {{$p := .Pick}}{{$sel := .Sel}}
+ {{range $i, $cur := .Sel}}<label class="sr" for="c-{{$i}}">Medio {{$i}}</label><select id="c-{{$i}}" name="{{index (slice "abcd" $i (add $i 1))}}"><option value="">{{if lt $i 2}}Elige medio{{else}}(opcional){{end}}</option>{{range $p}}<option value="{{.ID}}"{{if eq .ID $cur}} selected{{end}}>{{.Name}}</option>{{end}}</select>{{end}}
+ <button type="submit">Comparar</button>
+</form>
+{{if .Msg}}<p class="muted">{{.Msg}}</p>{{end}}
+{{if .Profiles}}
+<nav class="seg" aria-label="Periodo de historias"><span class="muted small">Historias</span>{{range .DayOpts}}<a class="chip sm{{if .On}} on{{end}}" href="{{.URL}}"{{if .On}} aria-current="true"{{end}}>{{.Days}} días</a>{{end}}</nav>
+<div class="pf-scroll">
+<table class="pf-table">
+ <thead><tr><th scope="col"><span class="sr">Métrica</span></th>
+ {{range .Heads}}<th scope="col"><a href="{{.URL}}">{{.Name}}</a><br>{{if .Lean}}<span class="badge {{.LeanCls}}">{{.Lean}}</span>{{else}}<span class="badge">Sin clasificar</span>{{end}}<br>{{.Spark}}</th>{{end}}</tr></thead>
+ <tbody>
+ {{range .Rows}}<tr><th scope="row">{{.Label}}{{if .Note}}<small>{{.Note}}</small>{{end}}</th>
+  {{range $i, $c := .Cells}}<td{{if index $.Rows 0 | printf "%v" | len | lt 0}}{{end}}>{{$c}}</td>{{end}}</tr>{{end}}
+ </tbody>
+</table></div>
+<p class="muted small">Calculado a las {{clock .Generated}}. El gráfico de cada cabecera muestra los artículos por día de los últimos 30 días.</p>
+{{end}}
+{{end}}

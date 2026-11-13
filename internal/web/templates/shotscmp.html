@@ -4,12 +4,13 @@
 {{define "content"}}
 <nav class="crumbs" aria-label="Ruta"><a href="{{.ShotsPageHref}}">Capturas</a> <span aria-hidden="true">›</span> <span>{{.Source.Name}}</span></nav>
 <h1>{{.Source.Name}} {{if .Source.Leaning}}<span class="badge {{leanClass .Source.Leaning}}">{{.Source.Leaning}}</span>{{end}}</h1>
+<details class="cmp-rangebox"><summary>Rango de fechas: {{.Desde}} → {{.Hasta}}</summary>
 <form class="cmp-range" action="{{.SourceURL}}" method="get">
  <input type="hidden" name="modo" value="{{.Modo}}">
  <label class="fld">Desde <input type="date" name="desde" value="{{.Desde}}" max="{{.Today}}"></label>
  <label class="fld">Hasta <input type="date" name="hasta" value="{{.Hasta}}" max="{{.Today}}"></label>
  <button type="submit">Ver rango</button>
-</form>
+</form></details>
 {{if .Empty}}
  <p class="empty">Necesito al menos dos capturas de {{.Source.Name}} en el rango ({{.Desde}} a {{.Hasta}}) para compararlas. {{if .Total}}Solo hay una.{{else}}No hay ninguna.{{end}} Prueba a ampliar las fechas.</p>
 {{else}}

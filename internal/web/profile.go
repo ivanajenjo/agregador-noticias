@@ -179,6 +179,7 @@ type outletCard struct {
 }
 
 type profListView struct {
+	Slots     []string
 	Cards     []outletCard
 	Total     int
 	Articles  int
@@ -212,7 +213,7 @@ func (h *profileHandler) pageList(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), profileTimeout)
 	defer cancel()
 	q := r.URL.Query()
-	v := profListView{Sort: q.Get("orden"), Kind: q.Get("tipo"), Region: q.Get("region"), Lean: q.Get("linea")}
+	v := profListView{Slots: []string{"a", "b", "c", "d"}, Sort: q.Get("orden"), Kind: q.Get("tipo"), Region: q.Get("region"), Lean: q.Get("linea")}
 	v.Sorts = []struct{ Key, Label string }{{"nombre", "Nombre"}, {"volumen", "Volumen"}, {"linea", "Línea editorial"}}
 	if v.Sort != "volumen" && v.Sort != "linea" {
 		v.Sort = "nombre"
@@ -287,6 +288,11 @@ type profRowView struct {
 	Small       []bool // sample too small to read much into it
 }
 
+type profBar struct {
+	Label  string
+	N, Pct int
+}
+
 type profPageView struct {
 	*profile.Profile
 	LeanCls     string
@@ -300,7 +306,7 @@ type profPageView struct {
 	DayOpts     []dayOpt
 	Metrics     []profRowView
 	Sides       []profile.SideStat
-	SectionMax  int
+	SectionRows []profBar
 	ShotURL     string
 	ShotsPage   string
 	Pick        []domain.Source
@@ -325,9 +331,11 @@ func (h *profileHandler) view(ctx context.Context, p *profile.Profile, days int,
 		v.DayOpts = append(v.DayOpts, dayOpt{Days: o, URL: "/medios/" + url.PathEscape(p.Source.ID) + "?dias=" + strconv.Itoa(o), On: o == days})
 	}
 	for _, sd := range p.Sections {
-		if sd.N > v.SectionMax {
-			v.SectionMax = sd.N
+		pc := 0
+		if p.SectionsN > 0 {
+			pc = sd.N * 100 / p.SectionsN
 		}
+		v.SectionRows = append(v.SectionRows, profBar{Label: sd.Label, N: sd.N, Pct: pc})
 	}
 	for _, sd := range p.Lag.Sides {
 		if sd.Covered > 0 {

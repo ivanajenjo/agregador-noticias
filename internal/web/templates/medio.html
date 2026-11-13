@@ -1,0 +1,100 @@
+{{define "head"}}<link rel="stylesheet" href="/static/profile.css?v=1">{{end}}
+
+{{define "content"}}
+<p class="back"><a href="/medios">← Medios</a></p>
+<div class="pf-head"><h1>{{.Source.Name}}</h1>{{if .Source.Leaning}}<span class="badge {{.LeanCls}}">{{.Source.Leaning}}</span>{{else}}<span class="badge">Sin clasificar</span>{{end}}</div>
+<p class="pf-caveat">La línea editorial es una <strong>etiqueta subjetiva</strong>, editable en <code>sources.yaml</code>. Las cifras describen lo que el medio publica en sus feeds; no miden calidad ni fiabilidad, y cada una indica su muestra y su periodo.</p>
+
+<section class="pf-sec" aria-labelledby="h-id">
+ <h2 id="h-id">Identidad</h2>
+ <dl class="pf-meta">
+  <div><dt>Línea editorial (subjetiva)</dt><dd>{{if .Source.Leaning}}{{.Source.Leaning}}{{else}}sin clasificar{{end}}</dd></div>
+  <div><dt>Tipo</dt><dd>{{if .Source.Kind}}{{.Source.Kind}}{{else}}—{{end}}</dd></div>
+  <div><dt>Región</dt><dd>{{if .Source.Region}}{{.Source.Region}}{{else}}—{{end}}</dd></div>
+  <div><dt>Web</dt><dd>{{if .Source.Homepage}}<a href="{{.Source.Homepage}}" target="_blank" rel="noopener noreferrer">{{.Source.Homepage}}</a>{{else}}—{{end}}</dd></div>
+  <div><dt>Estado de los feeds</dt><dd><i class="dot {{.Health}}" aria-hidden="true"></i> {{.HealthTx}}</dd></div>
+  <div><dt>Último artículo</dt><dd>{{ago .Last}}</dd></div>
+ </dl>
+ {{if .Feeds}}<details><summary class="small">Feeds ({{len .Feeds}})</summary>
+ <ul class="pf-feeds">{{range .Feeds}}<li><i class="dot {{.Status}}" aria-hidden="true"></i><span class="u">{{.URL}}{{if .Section}} <span class="muted">({{.Section}})</span>{{end}}{{if .LastError}} <span class="muted">· error: {{.LastError}}</span>{{else if not .LastOK.IsZero}} <span class="muted">· ok {{ago .LastOK}}</span>{{end}}</span></li>{{end}}</ul></details>{{end}}
+ <form class="pf-pick" method="get" action="/medios/comparar">
+  <input type="hidden" name="a" value="{{.Source.ID}}">
+  <label class="sr" for="cmp-b">Comparar con</label>
+  <select id="cmp-b" name="b"><option value="">Comparar con…</option>{{$id := .Source.ID}}{{range .Pick}}{{if ne .ID $id}}<option value="{{.ID}}">{{.Name}}</option>{{end}}{{end}}</select>
+  <button type="submit">Comparar</button>
+ </form>
+</section>
+
+<section class="pf-sec" aria-labelledby="h-vol">
+ <h2 id="h-vol">Volumen</h2>
+ <p class="pf-n">Artículos por día, últimos 30 días · n={{num .Total30}} artículos · media {{printf "%.1f" .Avg30}} al día.</p>
+ {{if .Total30}}<div class="pf-box">{{.Bars}}</div>
+ <details class="datatbl"><summary class="small">Ver datos en tabla</summary>
+  <div class="pf-scroll"><table class="pf-table"><thead><tr><th>Día</th><th>Artículos</th></tr></thead><tbody>{{range .Daily}}<tr><td>{{.Day.Format "02/01"}}</td><td>{{.N}}</td></tr>{{end}}</tbody></table></div></details>
+ {{else}}<p class="muted">Sin artículos en los últimos 30 días.</p>{{end}}
+</section>
+
+<section class="pf-sec" aria-labelledby="h-hrs">
+ <h2 id="h-hrs">Hora de publicación</h2>
+ {{if .Heat}}<p class="pf-n">{{.HeatNote}}</p><div class="pf-box">{{.Heat}}</div>
+ <p class="muted small">Se usa la fecha de publicación del feed, o la de primera vez visto si falta.</p>
+ {{else}}<p class="muted">Sin datos suficientes.</p>{{end}}
+</section>
+
+<section class="pf-sec" aria-labelledby="h-sec">
+ <h2 id="h-sec">Secciones</h2>
+ {{if .SectionRows}}<p class="pf-n">Muestra: {{.SectionsN}} artículos de los últimos {{.SectionDays}} días (sección declarada en el feed).</p>
+ <ul class="pf-bars">{{range .SectionRows}}<li><span>{{.Label}}</span><span class="track"><span class="fill" style="width:{{.Pct}}%"></span></span><span class="num">{{.N}}</span></li>{{end}}</ul>
+ {{else}}<p class="muted">Sin datos de sección.</p>{{end}}
+</section>
+
+<section class="pf-sec" aria-labelledby="h-terms">
+ <h2 id="h-terms">Vocabulario distintivo</h2>
+ {{if .Terms}}<p class="pf-n">Palabras de los titulares que este medio usa más que el resto · {{.TermsN}} titulares, últimos 14 días. Es estadística léxica, no una valoración.</p>
+ <ul class="pf-terms">{{range .Terms}}<li>{{.Term}} <small>×{{.Count}}</small></li>{{end}}</ul>
+ {{else}}<p class="muted">Muestra insuficiente (n={{.TermsN}} titulares en 14 días).</p>{{end}}
+</section>
+
+<section class="pf-sec" aria-labelledby="h-lag">
+ <h2 id="h-lag">Frente al resto de medios</h2>
+ {{if .NoTrends}}<p class="muted">El análisis de historias no está activado en este servidor.</p>
+ {{else}}
+ <nav class="seg" aria-label="Periodo"><span class="muted small">Periodo</span>{{range .DayOpts}}<a class="chip sm{{if .On}} on{{end}}" href="{{.URL}}"{{if .On}} aria-current="true"{{end}}>{{.Days}} días</a>{{end}}</nav>
+ <p class="pf-n">Historias cubiertas por al menos 3 medios en los últimos {{.Lag.Days}} días: n={{.Lag.Stories}}.</p>
+ {{if .Lag.Stories}}
+ <div class="pf-stats">
+  <div class="pf-stat"><b>{{printf "%.0f" .Lag.CoveragePct}} %</b><span>cobertura propia · {{.Lag.Covered}} de {{.Lag.Stories}} historias</span></div>
+  <div class="pf-stat"><b>{{if .Lag.LagSamples}}{{printf "%.0f" .Lag.MedianLagMin}} min{{else}}—{{end}}</b><span>retardo mediano frente al primero · n={{.Lag.LagSamples}}</span></div>
+  <div class="pf-stat"><b>{{printf "%.0f" .Lag.SharePct}} %</b><span>publica primero · {{.Lag.FirstN}} de {{.Lag.Covered}} cubiertas</span></div>
+  <div class="pf-stat"><b>{{.Lag.Omitted}}</b><span>historias omitidas</span></div>
+ </div>
+ {{if lt .Lag.Stories 10}}<p class="pf-caveat">Muestra pequeña: estas cifras pueden cambiar mucho con pocas historias más.</p>{{end}}
+ <p class="muted small">El retardo cuenta 0 min cuando el medio fue el primero. Un feed que pierde artículos sesga estas cifras: revisa el estado de sus feeds.</p>
+ {{if .Sides}}<h3>Cobertura propia según la línea de los otros medios</h3>
+ <div class="pf-scroll"><table class="pf-table"><thead><tr><th>Medios de línea…</th><th>Historias que cubrieron</th><th>De ellas, omitidas por este medio</th></tr></thead><tbody>
+ {{range .Sides}}<tr><td>{{.Label}}</td><td>{{.Covered}}</td><td>{{.Omitted}}</td></tr>{{end}}</tbody></table></div>{{end}}
+ {{if .Lag.OmittedTop}}<h3>Historias omitidas con más medios</h3><ul class="pf-heads">{{range .Lag.OmittedTop}}<li><time datetime="{{datetime .FirstAt}}">{{fulltime .FirstAt}}</time><span>{{.Title}} <span class="muted small">({{.Outlets}} medios)</span></span></li>{{end}}</ul>{{end}}
+ {{end}}
+ {{end}}
+</section>
+
+{{if or .Rev .Tone}}<section class="pf-sec" aria-labelledby="h-ext">
+ <h2 id="h-ext">Ediciones y tono</h2>
+ {{if .Rev}}<p><strong>{{printf "%.1f" .Rev.Rate}}</strong> titulares editados por cada 100 artículos <span class="muted small">(n={{.Rev.Edits}} ediciones en {{.Rev.Articles}} artículos, {{.Rev.Days}} días)</span></p>{{end}}
+ {{if .Tone}}<p class="pf-n">Tono: <strong>estimación</strong> del modelo «{{.Tone.Model}}», n={{.Tone.Total}}, 14 días. No es un hecho.</p>
+ <ul class="pf-terms">{{range .ToneLabels}}<li>{{.Label}} <small>{{.N}}</small></li>{{end}}</ul>{{end}}
+</section>{{end}}
+
+{{if .ShotURL}}<section class="pf-sec pf-shot" aria-labelledby="h-shot">
+ <h2 id="h-shot">Última portada</h2>
+ <a href="{{.ShotsPage}}"><img src="{{.ShotURL}}" alt="Portada de {{.Source.Name}} del {{fulltime .Shot.TakenAt}}" loading="lazy"></a>
+ <p class="muted small">Captura del {{fulltime .Shot.TakenAt}}. <a href="{{.ShotsPage}}">Comparar capturas</a></p>
+</section>{{end}}
+
+<section class="pf-sec" aria-labelledby="h-last">
+ <h2 id="h-last">Últimos titulares</h2>
+ {{if .Headlines}}<ul class="pf-heads">{{range .Headlines}}<li><time datetime="{{datetime .At}}">{{ago .At}}</time><a href="/articulo/{{.ID}}">{{.Title}}</a></li>{{end}}</ul>
+ {{else}}<p class="muted">Sin artículos recientes.</p>{{end}}
+</section>
+<p class="muted small">Calculado a las {{clock .Generated}} (caché de 10 minutos).</p>
+{{end}}

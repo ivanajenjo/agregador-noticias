@@ -77,3 +77,5 @@
  .cmp-th{width:68px}
 }
 @media (prefers-reduced-motion:reduce){.cmp *{scroll-behavior:auto!important;transition:none!important}}
+.cmp-rangebox{margin:.2rem 0 .4rem;font-size:.9rem}
+.cmp-rangebox summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:var(--muted)}

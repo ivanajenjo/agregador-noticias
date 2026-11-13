@@ -48,7 +48,7 @@ import (
 //
 // where age is measured from the latest article of the cluster.
 const (
-	storyMaxSize     = 40 // an event, not a topic: bigger clusters are split
+	storyMaxSize     = 60 // an event, not a topic: bigger clusters are split
 	storyGap         = 24 * time.Hour
 	storySpan        = 36 * time.Hour
 	storyMinIDF      = 1.2
@@ -57,7 +57,8 @@ const (
 	storyMaxDFFloor  = 25
 	storyMaxDFFrac   = 0.04
 	storyMaxDFAbs    = 120
-	storyMinShared   = 2 // distinct specific terms two articles must share to be linked (or one rare enough to carry E alone)
+	storyStrictAt    = 20
+	storyMinShared   = 2    // distinct specific terms two articles must share to be linked (or one rare enough to carry E alone)
 	storyFullLift    = 3.0  // window/baseline rate ratio at which a term gets full weight
 	storyMinBurst    = 0.15 // weight floor for background terms
 	storyEvidence    = 0.9  // E = storyEvidence * ln(N+1)
@@ -192,7 +193,11 @@ func (e *Engine) computeStories(ctx context.Context, o domain.TrendOptions) (*st
 		for k, t := range v.ids {
 			s += float64(v.w[k]) * float64(cl.cnt[t])
 		}
-		return s/float64(len(cl.members)) >= E/2
+		// small clusters accept loosely typical articles (E/2); growing ones
+		// demand more, up to E at storyStrictAt members, so a big topic
+		// splits into the events inside it instead of absorbing everything.
+		need := E / 2 * (1 + math.Min(1, float64(len(cl.members))/storyStrictAt))
+		return s/float64(len(cl.members)) >= need
 	}
 	add := func(cl *cluster, i int32) {
 		cl.members = append(cl.members, i)
