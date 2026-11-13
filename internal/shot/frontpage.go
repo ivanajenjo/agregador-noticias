@@ -148,7 +148,12 @@ func buildFrontItems(rp rawPage, homepage string) []domain.FrontItem {
 			continue
 		}
 		title := strings.Join(strings.Fields(r.T), " ")
-		if n := utf8.RuneCountInString(title); n < minTitleRunes || n > maxTitleRunes {
+		n := utf8.RuneCountInString(title)
+		if n < minTitleRunes || n > maxTitleRunes {
+			continue
+		}
+		// Short sentences ending in a full stop are promo blurbs/deks, not headlines.
+		if n < 60 && strings.HasSuffix(title, ".") {
 			continue
 		}
 		cs = append(cs, cand{it: domain.FrontItem{

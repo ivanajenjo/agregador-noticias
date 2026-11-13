@@ -164,8 +164,8 @@ func TestBlindSpotsConfigurable(t *testing.T) {
 	st := domain.Story{ID: "s", Sources: 4,
 		Coverage: []domain.SourceCoverage{cov("d1", "derecha"), cov("d2", "derecha"), cov("d3", "derecha"), cov("i1", "izquierda")},
 		Missing:  []domain.SourceCoverage{cov("i2", "izquierda"), cov("i3", "izquierda"), cov("i4", "izquierda"), cov("c1", "centro"), cov("c2", "centro")}}
-	// right rate 1.0, left .25, center 0 => skew .8: below default .85, above .75
-	svc := New(&fakeProv{stories: []domain.Story{st}}, Config{})
+	// right rate 1.0, left .25, center 0 => skew .8: below 0.9, above .75
+	svc := New(&fakeProv{stories: []domain.Story{st}}, Config{MinSkew: 0.9})
 	r, err := svc.BlindSpots(context.Background(), domain.TrendOptions{})
 	if err != nil || len(r.Spots) != 0 || len(r.All) != 1 {
 		t.Fatalf("%v %+v", err, r)

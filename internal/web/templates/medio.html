@@ -27,7 +27,7 @@
 
 <section class="pf-sec" aria-labelledby="h-vol">
  <h2 id="h-vol">Volumen</h2>
- <p class="pf-n">Artículos por día, últimos 30 días · n={{num .Total30}} artículos · media {{printf "%.1f" .Avg30}} al día.</p>
+ <p class="pf-n">Artículos por día, últimos 30 días · n={{.Total30Tx}} artículos · media {{printf "%.1f" .Avg30}} al día.</p>
  {{if .Total30}}<div class="pf-box">{{.Bars}}</div>
  <details class="datatbl"><summary class="small">Ver datos en tabla</summary>
   <div class="pf-scroll"><table class="pf-table"><thead><tr><th>Día</th><th>Artículos</th></tr></thead><tbody>{{range .Daily}}<tr><td>{{.Day.Format "02/01"}}</td><td>{{.N}}</td></tr>{{end}}</tbody></table></div></details>

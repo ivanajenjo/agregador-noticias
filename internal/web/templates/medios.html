@@ -20,7 +20,7 @@
   <h2><a href="{{.URL}}">{{.Source.Name}}</a></h2>
   <div class="row"><span>{{if .Source.Leaning}}<span class="badge {{.LeanCls}}">{{.Source.Leaning}}</span>{{else}}<span class="badge">Sin clasificar</span>{{end}}</span>
    <span class="muted small">{{.Meta}}</span></div>
-  <div class="row"><span><strong>{{.PerDayTx}}</strong> <span class="muted small">artículos/día (14 d, n={{num .Total14}})</span></span>{{.Spark}}</div>
+  <div class="row"><span><strong>{{.PerDayTx}}</strong> <span class="muted small">artículos/día (14 d, n={{.N14Tx}})</span></span>{{.Spark}}</div>
   <div class="row small muted"><span>Último: {{ago .Last}}</span><span><i class="dot {{.Health}}" aria-hidden="true"></i> {{.HealthTx}}</span></div>
  </li>
 {{end}}

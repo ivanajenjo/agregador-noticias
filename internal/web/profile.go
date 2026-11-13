@@ -174,6 +174,7 @@ type outletCard struct {
 	LeanCls  string
 	Meta     string
 	PerDayTx string
+	N14Tx    string
 	HealthTx string
 	Spark    template.HTML
 }
@@ -182,7 +183,7 @@ type profListView struct {
 	Slots     []string
 	Cards     []outletCard
 	Total     int
-	Articles  int
+	Articles  int64
 	Sort      string
 	Kind      string
 	Region    string
@@ -228,7 +229,7 @@ func (h *profileHandler) pageList(w http.ResponseWriter, r *http.Request) {
 		h.s.render(w, r, http.StatusInternalServerError, "medios", "Medios", "outlets", v)
 		return
 	}
-	v.Generated, v.Articles = ov.GeneratedAt, ov.Articles30
+	v.Generated, v.Articles = ov.GeneratedAt, int64(ov.Articles30)
 	kinds, regions := map[string]bool{}, map[string]bool{}
 	for _, o := range ov.Outlets {
 		v.Pick = append(v.Pick, o.Source)
@@ -245,7 +246,7 @@ func (h *profileHandler) pageList(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		v.Cards = append(v.Cards, outletCard{Summary: o, URL: "/medios/" + url.PathEscape(o.Source.ID), LeanCls: leanClassOf(o.Source.Leaning),
-			Meta: metaOf(o.Source), PerDayTx: fnum(o.PerDay, 1), HealthTx: healthText[o.Health], Spark: sparkSVG(o.Spark)})
+			Meta: metaOf(o.Source), PerDayTx: fnum(o.PerDay, 1), N14Tx: humanInt(int64(o.Total14)), HealthTx: healthText[o.Health], Spark: sparkSVG(o.Spark)})
 	}
 	for k := range kinds {
 		v.Kinds = append(v.Kinds, k)
@@ -302,6 +303,7 @@ type profPageView struct {
 	HeatNote    string
 	Spark       template.HTML
 	HealthTx    string
+	Total30Tx   string
 	LagDays     int
 	DayOpts     []dayOpt
 	Metrics     []profRowView
@@ -318,7 +320,7 @@ type profPageView struct {
 
 func (h *profileHandler) view(ctx context.Context, p *profile.Profile, days int, pick []domain.Source) profPageView {
 	v := profPageView{Profile: p, LeanCls: leanClassOf(p.Source.Leaning), Meta: metaOf(p.Source), Bars: barsSVG(p.Daily, h.s.loc), Heat: heatSVG(p.Heat),
-		HealthTx: healthText[p.Health], LagDays: days, Generated: p.GeneratedAt, NoTrends: !p.Lag.Available, Pick: pick}
+		HealthTx: healthText[p.Health], Total30Tx: humanInt(int64(p.Total30)), LagDays: days, Generated: p.GeneratedAt, NoTrends: !p.Lag.Available, Pick: pick}
 	var sp []int
 	for _, d := range p.Daily {
 		sp = append(sp, d.N)

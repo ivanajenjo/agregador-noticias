@@ -54,15 +54,15 @@ type Config struct {
 	// Blind spots
 	MinCovered      int     // min distinct covering outlets (default 3)
 	MinBlockOutlets int     // a block needs this many outlets to be assessed (default 2)
-	MinSkew         float64 // share of the (size-normalised) coverage in one block (default 0.85)
-	MinDominantRate float64 // fraction of that block's outlets covering it (default 0.4)
+	MinSkew         float64 // share of the (size-normalised) coverage in one block (default 0.8)
+	MinDominantRate float64 // fraction of that block's outlets covering it (default 0.2)
 	MaxStories      int     // stories examined (default 100)
 }
 
 // DefaultConfig returns the default thresholds.
 func DefaultConfig() Config {
 	return Config{Blocks: Blocks3, MinTermCount: 2, TopTerms: 10, MinZ: 1.0, PriorStrength: 20, MaxBackground: 6000,
-		MinCovered: 3, MinBlockOutlets: 2, MinSkew: 0.85, MinDominantRate: 0.4, MaxStories: 100}
+		MinCovered: 3, MinBlockOutlets: 2, MinSkew: 0.8, MinDominantRate: 0.2, MaxStories: 100}
 }
 
 func (c Config) withDefaults() Config {

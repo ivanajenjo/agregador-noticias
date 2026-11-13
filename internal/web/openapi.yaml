@@ -256,6 +256,27 @@ paths:
           content: { application/json: { schema: { $ref: "#/components/schemas/Object" } } }
         "400": { $ref: "#/components/responses/Error" }
         "503": { $ref: "#/components/responses/Unavailable" }
+  /api/outlets:
+    get:
+      tags: [Noticias]
+      summary: Resumen de medios (volumen, cobertura, línea editorial como etiqueta editable)
+      responses:
+        "200":
+          description: Medios.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Object" } } }
+        "500": { $ref: "#/components/responses/Error" }
+  /api/outlets/{id}:
+    get:
+      tags: [Noticias]
+      summary: Ficha de un medio
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: dias, in: query, schema: { type: integer }, description: Ventana en días. }
+      responses:
+        "200":
+          description: Perfil del medio.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Object" } } }
+        "404": { $ref: "#/components/responses/Error" }
   /api/revisions:
     get:
       tags: [Noticias]

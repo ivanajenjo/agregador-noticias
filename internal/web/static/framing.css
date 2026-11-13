@@ -37,3 +37,5 @@ mark.w.uniq{background:var(--hl);color:var(--hl-fg)}
  .fmatrix.wide td.fnames{grid-column:1/-1;padding-left:0}
  .fmatrix.wide .fbar{width:auto}
 }
+.page-framing section{margin-top:1.6rem}
+.page-framing .tabs .count{margin-left:.45rem}
