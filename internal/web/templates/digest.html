@@ -1,0 +1,114 @@
+{{define "head"}}<link rel="stylesheet" href="/static/digest.css?v=1">
+<link rel="alternate" type="application/atom+xml" title="Resumen diario" href="/resumen.atom">{{end}}
+
+{{define "content"}}
+<div class="dlayout">
+<article class="digest">
+ <header class="dhead">
+  <p class="kicker">Resumen diario</p>
+  <h1>{{.Title}}</h1>
+  {{if .Found}}
+  <p class="dstats muted">{{.D.Articles}} artículos · {{.D.Outlets}} medios{{if .D.Changed}} · {{.D.Changed}} titulares modificados{{end}}{{if .WindowTxt}} · {{.WindowTxt}}{{end}}</p>
+  <p class="dlead">{{.D.Lead}}</p>
+  {{else}}
+  <p class="dlead muted">{{if .CanGen}}Todavía no hay resumen para este día. Puedes generarlo ahora a partir de los titulares recogidos.{{else}}Todavía no hay resumen para este día. Se genera cada mañana a la hora configurada.{{end}}</p>
+  {{end}}
+  <div class="dbar">
+   <nav class="dnav" aria-label="Navegación entre resúmenes">
+    {{if .Prev}}<a class="btn" href="{{.Prev}}" rel="prev" aria-label="Resumen anterior">←</a>{{else}}<span class="btn dis" aria-hidden="true">←</span>{{end}}
+    {{if .Next}}<a class="btn" href="{{.Next}}" rel="next" aria-label="Resumen siguiente">→</a>{{else}}<span class="btn dis" aria-hidden="true">→</span>{{end}}
+   </nav>
+   {{if .CanGen}}<span class="dgen"><button type="button" class="btn" hx-post="/api/jobs/digest{{if .GenDay}}?day={{.GenDay}}{{end}}" hx-target="next .jobmsg" hx-swap="innerHTML" hx-headers='{"X-Requested-With":"htmx"}'>{{.GenLabel}}</button> <span class="jobmsg" aria-live="polite"></span></span>{{end}}
+   <a class="btn ghost" href="/resumen.atom" title="Suscríbete desde cualquier lector RSS">Feed Atom</a>
+  </div>
+ </header>
+
+{{if .Found}}
+ {{if .Changes}}
+ <section class="dsec dchanged" aria-labelledby="h-cambios">
+  <h2 id="h-cambios">Lo que cambió hoy</h2>
+  <ul>{{range .Changes}}<li>{{.}}</li>{{end}}</ul>
+ </section>
+ {{end}}
+
+ {{if .Stories}}
+ <section class="dsec" aria-labelledby="h-hist">
+  <h2 id="h-hist" class="sec-t">Las historias del día</h2>
+  {{range $i, $s := .Stories}}
+  <section class="dstory" aria-labelledby="st{{$i}}">
+   <p class="snum" aria-hidden="true">{{add $i 1}}</p>
+   <div class="sbody">
+   <h3 id="st{{$i}}">{{.Title}}</h3>
+   <div class="meta sbadges">
+    <span class="badge">{{.Sources}} medios</span>
+    <span class="badge">{{.Articles}} artículos</span>
+    {{if .FirstBy}}<span>primero: <strong>{{.FirstBy}}</strong> <time datetime="{{datetime .FirstAt}}">{{clock .FirstAt}}</time></span>{{end}}
+   </div>
+   {{if .Leanings}}<div class="lean">{{leanBar .Leanings}}<div class="cap muted small">{{leanCap .Leanings}}</div></div>{{end}}
+   {{if .Cite}}<p class="narr">{{.Cite}}</p>{{end}}
+   <ul class="dheads">
+   {{range .Headlines}}
+    <li id="f{{.N}}"><span class="n">[{{.N}}]</span> <span class="hl"><a class="ohead" href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.Title}}</a> <span class="muted small">{{.Outlet}}</span>{{if .Leaning}} <span class="badge {{leanClass .Leaning}}">{{.Leaning}}</span>{{end}}</span></li>
+   {{end}}
+   </ul>
+   {{if .MissingTxt}}<p class="muted small missing">No lo cubren: {{.MissingTxt}}</p>{{end}}
+   <div class="sactions"><a class="btn" href="{{.CompareURL}}">Comparar enfoques</a></div>
+   </div>
+  </section>
+  {{end}}
+ </section>
+ {{else}}
+ <p class="empty">Ninguna historia llegó a ser cubierta por varios medios en este periodo.</p>
+ {{end}}
+
+ {{if .Rising}}
+ <section class="dsec" aria-labelledby="h-alza">
+  <h2 id="h-alza" class="sec-t">Términos en alza</h2>
+  <ul class="rising">
+   {{range .Rising}}<li><a class="chip" href="{{.URL}}">{{.Term}}{{if .New}} <span class="badge new">nuevo</span>{{end}} <span class="muted small">{{.Count}}</span></a></li>{{end}}
+  </ul>
+ </section>
+ {{end}}
+
+ {{if .D.Distinctive}}
+ <section class="dsec" aria-labelledby="h-dist">
+  <h2 id="h-dist" class="sec-t">El titular más singular de cada medio</h2>
+  <ul class="distinct">
+   {{range .D.Distinctive}}
+   <li><span class="oname"><strong>{{.Outlet}}</strong>{{if .Leaning}} <span class="badge {{leanClass .Leaning}}">{{.Leaning}}</span>{{end}}</span>
+    <a class="ohead" href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.Title}}</a></li>
+   {{end}}
+  </ul>
+  <p class="muted small">Elegido por las palabras que menos aparecen en los demás titulares del día; no es una valoración.</p>
+ </section>
+ {{end}}
+
+ {{if .Shots}}
+ <section class="dsec" aria-labelledby="h-port">
+  <h2 id="h-port" class="sec-t">Portadas del día</h2>
+  <ul class="strip">
+   {{range .Shots}}
+   <li><a class="thumb" href="{{.URL}}" data-viewer="digest" data-title="{{.Outlet}} · {{.Time}}"><img loading="lazy" decoding="async" src="{{.URL}}" alt="Portada de {{.Outlet}} a las {{.Time}}"></a>
+    <span class="cap small"><strong>{{.Outlet}}</strong> <span class="muted">{{.Time}}</span></span></li>
+   {{end}}
+  </ul>
+  <p class="small"><a href="/capturas?date={{.Day}}">Ver todas las capturas del día →</a></p>
+ </section>
+ {{end}}
+
+ <footer class="dfoot muted small">
+  <p>Generado a las {{clock .D.GeneratedAt}}{{if .D.Model}}. Redactado por <strong>{{.D.Model}}</strong> a partir de los titulares; puede contener errores. Las frases sin fuente verificable se descartan automáticamente.{{else}}. Todo el contenido se calcula a partir de los titulares, sin IA.{{end}}</p>
+ </footer>
+{{end}}
+</article>
+
+{{if .Archive}}
+<aside class="darchive" aria-labelledby="h-arch">
+ <h2 id="h-arch">Archivo</h2>
+ <ul>
+  {{range .Archive}}<li><a href="{{.URL}}"{{if .On}} aria-current="page"{{end}}>{{.Label}}</a> <span class="muted small">{{.Stories}} historias</span></li>{{end}}
+ </ul>
+</aside>
+{{end}}
+</div>
+{{end}}

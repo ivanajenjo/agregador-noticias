@@ -127,7 +127,13 @@ type digestShotView struct {
 	URL, Time string
 }
 
+type risingView struct {
+	domain.DigestTerm
+	URL string
+}
+
 type digestView struct {
+	Rising     []risingView
 	Found      bool
 	Day        string
 	Title      string
@@ -162,6 +168,9 @@ func (s *server) digestView(ctx context.Context, day string, d *domain.Digest) d
 			sv.Cite = citeHTML(st.Narrative)
 		}
 		v.Stories = append(v.Stories, sv)
+	}
+	for _, t := range d.Rising {
+		v.Rising = append(v.Rising, risingView{DigestTerm: t, URL: termURL(t.Key)})
 	}
 	for _, c := range d.WhatChanged {
 		v.Changes = append(v.Changes, citeHTML(c))

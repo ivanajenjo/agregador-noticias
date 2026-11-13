@@ -27,14 +27,18 @@ var staticFS embed.FS
 // Deps are the collaborators of the web layer. Store is required; the others
 // may be nil, in which case the related features answer 503 / are hidden.
 type Deps struct {
-	Store     domain.Store
-	Retriever domain.Retriever
-	Ingestor  domain.Ingestor
-	Shots     domain.ShotTaker
-	LLM       domain.StatusProvider // may be nil
-	Trends    domain.TrendProvider  // may be nil: Tendencias hidden, routes answer 503
-	ShotsDir  string                // served read-only at /shots/
-	Log       *slog.Logger
+	Store       domain.Store
+	Retriever   domain.Retriever
+	Ingestor    domain.Ingestor
+	Shots       domain.ShotTaker
+	LLM         domain.StatusProvider // may be nil
+	Trends      domain.TrendProvider  // may be nil: Tendencias hidden, routes answer 503
+	ShotsDir    string                // served read-only at /shots/
+	Maintenance domain.Maintainer     // may be nil: POST /api/jobs/maintenance and GET /api/maintenance answer 503
+	Heartbeat   domain.Heartbeat      // may be nil: /readyz skips the scheduler check
+	Follow      domain.FollowStore    // may be nil: Seguimientos hidden, routes answer 503
+	Alerts      domain.AlertService   // may be nil: "Probar notificación" disabled
+	Log         *slog.Logger
 }
 
 // Options configure the handler.
@@ -54,12 +58,13 @@ type server struct {
 	tpl    map[string]*template.Template
 	static map[string]staticFile
 	jobs   *jobTracker
+	ops    *opsState // metrics registry + export limiter (metrics.go)
 	now    func() time.Time
 }
 
 // New builds the full HTTP handler.
 func New(deps Deps, opts Options) http.Handler {
-	s := &server{d: deps, o: opts, log: deps.Log, loc: opts.Location, now: time.Now, jobs: newJobTracker()}
+	s := &server{d: deps, o: opts, log: deps.Log, loc: opts.Location, now: time.Now, jobs: newJobTracker(), ops: newOpsState()}
 	if s.log == nil {
 		s.log = slog.New(slog.NewTextHandler(discard{}, nil))
 	}
@@ -120,6 +125,7 @@ func New(deps Deps, opts Options) http.Handler {
 	h = s.authMW(h)
 	h = s.securityMW(h)
 	h = s.logMW(h)
+	h = s.metricsMW(mux, h)
 	h = s.recoverMW(h)
 	return h
 }
@@ -177,7 +183,7 @@ func (s *server) logMW(next http.Handler) http.Handler {
 		start := time.Now()
 		sw := &statusWriter{ResponseWriter: w}
 		next.ServeHTTP(sw, r)
-		if r.URL.Path == "/healthz" {
+		if r.URL.Path == "/healthz" || r.URL.Path == "/readyz" {
 			return
 		}
 		s.log.Info("http", "method", r.Method, "path", r.URL.Path, "status", sw.status, "bytes", sw.bytes, "dur", time.Since(start).Round(time.Millisecond))
@@ -206,7 +212,7 @@ func (s *server) authMW(next http.Handler) http.Handler {
 	wantU := sha256.Sum256([]byte(s.o.BasicAuthUser))
 	wantP := sha256.Sum256([]byte(s.o.BasicAuthPass))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/healthz" {
+		if r.URL.Path == "/healthz" || r.URL.Path == "/readyz" {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -256,7 +262,7 @@ func sameOrigin(r *http.Request) bool {
 // timeoutMW bounds the context of every non-streaming request.
 func (s *server) timeoutMW(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/ask" {
+		if r.URL.Path != "/api/ask" && !strings.HasPrefix(r.URL.Path, "/api/export/") {
 			ctx, cancel := ctxTimeout(r, 30*time.Second)
 			defer cancel()
 			r = r.WithContext(ctx)
