@@ -79,3 +79,7 @@
 @media (prefers-reduced-motion:reduce){.cmp *{scroll-behavior:auto!important;transition:none!important}}
 .cmp-rangebox{margin:.2rem 0 .4rem;font-size:.9rem}
 .cmp-rangebox summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:var(--muted)}
+.cmp-tabs{gap:.3rem;margin:.2rem 0 .6rem}.cmp-tabs [role=tab]{padding:0 .8rem;font-size:.92rem}
+.cmp-tools{margin:.5rem 0 .4rem}
+.cmp-heights{margin:.4rem 0}
+@media (max-width:520px){.cmp-tabs [role=tab]{padding:0 .55rem;font-size:.85rem}.cmp-presets .chip{padding:0 .8rem;font-size:.9rem}.cmp h1{margin:.2rem 0}}

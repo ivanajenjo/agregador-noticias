@@ -243,7 +243,7 @@ type trendsView struct {
 }
 
 func (s *server) trendOpts(q url.Values, window time.Duration, limit int) domain.TrendOptions {
-	return domain.TrendOptions{Window: window, Limit: limit, SourceIDs: cleanList(q["fuentes"]), Now: s.now()}
+	return domain.TrendOptions{Window: window, Limit: limit, SourceIDs: cleanList(q["fuentes"])}
 }
 
 func (s *server) coverageName(c domain.SourceCoverage) string {
@@ -476,7 +476,7 @@ func (s *server) pageTerm(w http.ResponseWriter, r *http.Request) {
 	days := parseDays(r.URL.Query().Get("dias"))
 	ctx, cancel := context.WithTimeout(r.Context(), trendsTimeout)
 	defer cancel()
-	d, err := s.d.Trends.Term(ctx, key, days, domain.TrendOptions{Now: s.now()})
+	d, err := s.d.Trends.Term(ctx, key, days, domain.TrendOptions{})
 	if err != nil && !isNotFound(err) {
 		s.log.Error("trends: term", "key", key, "err", err)
 		s.fail(w, r, http.StatusInternalServerError, "No se pudo calcular este término en este momento.")

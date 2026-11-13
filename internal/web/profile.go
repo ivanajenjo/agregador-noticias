@@ -104,7 +104,7 @@ func barsSVG(days []profile.DayN, loc *time.Location) template.HTML {
 		x := left + float64(i)*slot + (slot-bw)/2
 		hh := float64(d.N) * plotH / float64(mx)
 		fmt.Fprintf(&sb, `<rect class="pf-bar" x="%.1f" y="%.1f" width="%.1f" height="%.1f"><title>%s: %d</title></rect>`, x, top+plotH-hh, bw, hh, d.Day.In(loc).Format("2/1"), d.N)
-		if i%7 == 0 || i == len(days)-1 {
+		if i%7 == 0 && len(days)-1-i >= 3 || i == len(days)-1 {
 			fmt.Fprintf(&sb, `<text class="tick" x="%.1f" y="%.0f" text-anchor="middle">%s</text>`, x+bw/2, H-5, d.Day.In(loc).Format("2/1"))
 		}
 	}

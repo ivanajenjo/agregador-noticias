@@ -33,7 +33,7 @@ mark.w.uniq{background:var(--hl);color:var(--hl-fg)}
 @media (max-width:699.98px){
  .fheads td.fh{display:block;text-align:left}.fheads td.fh::before{display:none}
  .fmatrix.wide,.fmatrix.wide tbody,.fmatrix.wide tr{display:block}
- .fmatrix.wide tr{display:grid;grid-template-columns:auto 1fr auto;gap:.1rem .6rem;padding:.4rem 0;border-top:1px solid var(--border)}
+ .fmatrix.wide tr{display:grid;grid-template-columns:6.5rem 1fr auto;gap:.1rem .6rem;align-items:center;padding:.4rem 0;border-top:1px solid var(--border)}
  .fmatrix.wide td.fnames{grid-column:1/-1;padding-left:0}
  .fmatrix.wide .fbar{width:auto}
 }

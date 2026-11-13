@@ -236,9 +236,6 @@
       if (e.ctrlKey || e.metaKey) zoomAt(z.s * (e.deltaY < 0 ? 1.15 : 1 / 1.15), l.x, l.y);
       else { z.y -= e.deltaY; z.x -= e.deltaX; clampPan(); apply(); }
     }, { passive: false });
-    stage.addEventListener("dblclick", function (e) {
-      if (!fs) return; var l = local(e); if (z.s > 1) z.reset(); else zoomAt(2.5, l.x, l.y);
-    });
   }
   function resetZoom() { zooms.forEach(function (o) { o.z.reset(); }); }
   bindStage(sliderStage, sliderZoom, true);

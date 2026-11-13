@@ -150,7 +150,7 @@ func (s *server) apiTrendTerm(w http.ResponseWriter, r *http.Request) {
 	days := intParam(r, "dias", defaultTermDays, minTermDays, maxTermDays)
 	ctx, cancel := context.WithTimeout(r.Context(), trendsTimeout)
 	defer cancel()
-	d, err := s.d.Trends.Term(ctx, key, days, domain.TrendOptions{SourceIDs: cleanList(q["fuentes"]), Now: s.now()})
+	d, err := s.d.Trends.Term(ctx, key, days, domain.TrendOptions{SourceIDs: cleanList(q["fuentes"])})
 	if err != nil && !isNotFound(err) {
 		s.log.Error("api trend term", "key", key, "err", err)
 		s.fail(w, r, http.StatusInternalServerError, "Error al calcular el término")

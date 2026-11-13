@@ -4,7 +4,7 @@
 {{define "content"}}
 <nav class="crumbs" aria-label="Ruta"><a href="{{.ShotsPageHref}}">Capturas</a> <span aria-hidden="true">›</span> <span>{{.Source.Name}}</span></nav>
 <h1>{{.Source.Name}} {{if .Source.Leaning}}<span class="badge {{leanClass .Source.Leaning}}">{{.Source.Leaning}}</span>{{end}}</h1>
-<details class="cmp-rangebox"><summary>Rango de fechas: {{.Desde}} → {{.Hasta}}</summary>
+<details class="cmp-rangebox"><summary>{{.Total}} capturas · {{.Desde}} → {{.Hasta}}{{if .Truncated}} (las más recientes){{end}} · cambiar</summary>
 <form class="cmp-range" action="{{.SourceURL}}" method="get">
  <input type="hidden" name="modo" value="{{.Modo}}">
  <label class="fld">Desde <input type="date" name="desde" value="{{.Desde}}" max="{{.Today}}"></label>
@@ -15,7 +15,6 @@
  <p class="empty">Necesito al menos dos capturas de {{.Source.Name}} en el rango ({{.Desde}} a {{.Hasta}}) para compararlas. {{if .Total}}Solo hay una.{{else}}No hay ninguna.{{end}} Prueba a ampliar las fechas.</p>
 {{else}}
 <div class="cmp" id="cmp" data-modo="{{.Modo}}" data-a="{{.A.ID}}" data-b="{{.B.ID}}" data-source="{{.Source.ID}}" data-frames="{{.FramesJSON}}">
- <p class="cmp-sum muted small">{{.Total}} capturas · {{.Desde}} → {{.Hasta}}{{if .Truncated}} · se muestran las {{.Total}} más recientes{{end}}</p>
  <div class="cmp-tabs tabs" role="tablist" aria-label="Modo de vista">
   <a role="tab" data-modo="slider" href="{{index .TabHref "slider"}}" aria-selected="{{if eq .Modo "slider"}}true{{else}}false{{end}}">Deslizador</a>
   <a role="tab" data-modo="lado" href="{{index .TabHref "lado"}}" aria-selected="{{if eq .Modo "lado"}}true{{else}}false{{end}}">Lado a lado</a>
@@ -50,7 +49,6 @@
  <div class="cmp-tools">
   <button type="button" class="btn" id="cmp-full" aria-pressed="false">Ver página completa</button>
   <button type="button" class="btn" id="cmp-fs" hidden>Pantalla completa</button>
-  <span class="cmp-heights muted small" id="cmp-heights" aria-live="polite"></span>
  </div>
 
  <section class="cmp-panel" data-panel="slider" role="tabpanel" aria-label="Deslizador antes/después"{{if ne .Modo "slider"}} hidden{{end}}>
@@ -105,6 +103,8 @@
   <p class="muted small" id="tl-hint">Atajos: espacio reproduce/pausa · ← → cambian de fotograma · Inicio/Fin · + − velocidad.</p>
   <div class="cmp-stage" id="stage-tl"><img id="tl-img" decoding="async" alt="Fotograma del timelapse de {{.Source.Name}}" src="{{.B.U}}"></div>
  </section>
+
+ <p class="cmp-heights muted small" id="cmp-heights" aria-live="polite"></p>
 
  <section class="cmp-strip-wrap" aria-label="Capturas por hora">
   <div class="cmp-strip-head"><h2>Capturas</h2>

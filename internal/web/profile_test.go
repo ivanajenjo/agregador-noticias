@@ -65,7 +65,7 @@ func TestProfilePages(t *testing.T) {
 	if strings.Contains(r.Body.String(), "<script>alert(1)") {
 		t.Fatal("unescaped outlet name")
 	}
-	if b := do(h, "GET", "/medios?tipo=digital&orden=volumen", nil, "").Body.String(); strings.Contains(b, "El País") || !strings.Contains(b, "&lt;script&gt;") {
+	if b := do(h, "GET", "/medios?tipo=digital&orden=volumen", nil, "").Body.String(); strings.Contains(b, `href="/medios/pais"`) || !strings.Contains(b, "&lt;script&gt;") {
 		t.Fatal("kind filter")
 	}
 	r = do(h, "GET", "/medios/pais", nil, "")
