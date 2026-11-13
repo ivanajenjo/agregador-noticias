@@ -15,10 +15,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ivanajenjo/agregador-noticias/internal/alerts"
+	"github.com/ivanajenjo/agregador-noticias/internal/annotate"
 	"github.com/ivanajenjo/agregador-noticias/internal/config"
+	"github.com/ivanajenjo/agregador-noticias/internal/digest"
 	"github.com/ivanajenjo/agregador-noticias/internal/domain"
 	"github.com/ivanajenjo/agregador-noticias/internal/ingest"
 	"github.com/ivanajenjo/agregador-noticias/internal/llm"
+	"github.com/ivanajenjo/agregador-noticias/internal/ops"
 	"github.com/ivanajenjo/agregador-noticias/internal/rag"
 	"github.com/ivanajenjo/agregador-noticias/internal/sched"
 	"github.com/ivanajenjo/agregador-noticias/internal/shot"
@@ -111,6 +115,7 @@ func run(cfgPath string) error {
 	iopts.PerHostDelay = cfg.Ingest.PerHostDelay
 	iopts.FetchFullText = cfg.Ingest.FetchFullText
 	iopts.MaxFullTextPerFeed = cfg.Ingest.FullTextPerFeed
+	iopts.TrackRevisions = cfg.Revisions.Enabled
 	iopts.RespectRobots = cfg.Ingest.RespectRobots
 	ing := ingest.New(st, iopts, log)
 
@@ -160,11 +165,54 @@ func run(cfgPath string) error {
 
 	trendEngine := trends.New(st, trends.Options{})
 
+	// --- annotations (tone/intent with a small model) ---
+	annoModel := firstNonEmpty(cfg.Annotations.Model, cfg.Chat.Model)
+	annoBase := firstNonEmpty(cfg.Annotations.BaseURL, cfg.Chat.BaseURL)
+	annoKey := firstNonEmpty(cfg.Annotations.APIKey, cfg.Chat.APIKey)
+	if cfg.Annotations.Enabled {
+		if annoBase == "" || annoModel == "" {
+			log.Warn("annotations enabled but no base_url/model (annotations.* or chat.*): disabled")
+		} else {
+			aw := annotate.NewWorker(st, annotate.NewClient(annoBase, annoKey, annoModel), annotate.WorkerOptions{
+				Model: annoModel, BatchSize: cfg.Annotations.BatchSize, Interval: cfg.Annotations.Interval, Log: log,
+			})
+			go aw.Run(ctx)
+		}
+	}
+
+	// --- alerts, digest, maintenance ---
+	alertEng := alerts.New(alerts.Deps{Store: st, Follow: st, Trends: trendEngine, Log: log}, alerts.Options{
+		Window: cfg.Alerts.Window, MinSources: cfg.Alerts.MinSources, MaxPerHour: cfg.Alerts.MaxPerHour,
+		QuietStart: cfg.Alerts.QuietStart, QuietEnd: cfg.Alerts.QuietEnd, Location: loc, PublicURL: cfg.Alerts.PublicURL,
+		NtfyURL: cfg.Alerts.NtfyURL, NtfyTopic: cfg.Alerts.NtfyTopic,
+		TelegramBot: cfg.Alerts.TelegramBot, TelegramChat: cfg.Alerts.TelegramChat, WebhookURL: cfg.Alerts.WebhookURL,
+	})
+	alertsJob := sched.Job{Name: "alerts", Run: alertEng.RunOnce}
+	if cfg.Alerts.Enabled && cfg.Alerts.Interval > 0 {
+		alertsJob.Spec = "@every " + cfg.Alerts.Interval.String()
+	}
+	digestBuilder := digest.New(digest.Deps{Store: st, Trends: trendEngine, Digests: st, Chat: chatI, Revisions: st, Log: log},
+		digest.Options{UseLLM: cfg.Digest.UseLLM, Location: loc})
+	digestJob := sched.Job{Name: "digest", Run: digestBuilder.RunOnce}
+	if cfg.Digest.Enabled {
+		digestJob.Spec = cfg.Digest.Cron
+	}
+	maint := &ops.Maintenance{Store: st, Days: cfg.Retention.ArticlesDays, Log: log}
+	maintJob := sched.Job{Name: "maintenance", Spec: "45 4 * * *", Run: maint.RunOnce}
+	for _, j := range []sched.Job{alertsJob, digestJob, maintJob} {
+		if err := sc.Add(j); err != nil {
+			return err
+		}
+	}
+
 	// --- web ---
 	handler := web.New(web.Deps{
 		Store: st, Retriever: retriever, Ingestor: ing, Shots: shots, LLM: status,
 		Trends: trendEngine, ShotsDir: shotsDir, Log: log,
-	}, web.Options{BasicAuthUser: cfg.Auth.User, BasicAuthPass: cfg.Auth.Pass, Location: loc, Version: version, EmbedModel: cfg.Embeddings.Model})
+		Follow: st, Alerts: alertEng, Digests: st, DigestGen: digestBuilder, Prominence: st,
+		Maintenance: maint, Heartbeat: sc,
+		Annotations: st, AnnotationModel: annoModel, AnnotationsEnabled: cfg.Annotations.Enabled,
+	}, web.Options{BasicAuthUser: cfg.Auth.User, BasicAuthPass: cfg.Auth.Pass, Location: loc, Version: version, EmbedModel: cfg.Embeddings.Model, PublicURL: cfg.Alerts.PublicURL})
 	srv := &http.Server{Addr: cfg.Listen, Handler: handler, ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 2 * time.Minute}
 
 	errc := make(chan error, 1)
@@ -184,6 +232,15 @@ func run(cfgPath string) error {
 	_ = srv.Shutdown(shutCtx)
 	sc.Stop()
 	return nil
+}
+
+func firstNonEmpty(v ...string) string {
+	for _, s := range v {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
 }
 
 func envOr(k, d string) string {
