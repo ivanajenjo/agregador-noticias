@@ -83,3 +83,5 @@
 .cmp-tools{margin:.5rem 0 .4rem}
 .cmp-heights{margin:.4rem 0}
 @media (max-width:520px){.cmp-tabs [role=tab]{padding:0 .55rem;font-size:.85rem}.cmp-presets .chip{padding:0 .8rem;font-size:.9rem}.cmp h1{margin:.2rem 0}}
+@media (max-width:520px){.cmp-tabs{gap:.25rem}.cmp-tabs [role=tab]{padding:0 .45rem;font-size:.8rem}}
+@media (hover:none){#tl-hint{display:none}}

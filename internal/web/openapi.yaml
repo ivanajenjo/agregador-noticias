@@ -214,6 +214,38 @@ paths:
           content: { application/json: { schema: { $ref: "#/components/schemas/Object" } } }
         "400": { $ref: "#/components/responses/Error" }
         "503": { $ref: "#/components/responses/Unavailable" }
+  /api/frontpage:
+    get:
+      tags: [Noticias]
+      summary: Titulares detectados en una portada capturada (posición, tamaño, prominencia)
+      description: >-
+        Sin `at` ni `path` devuelve la última captura del medio. `path` es la ruta
+        de la captura bajo /shots/ y devuelve además el ancho real de la imagen.
+      parameters:
+        - { name: source, in: query, required: true, schema: { type: string } }
+        - { name: at, in: query, schema: { type: string }, description: Segundos Unix o RFC3339 de la captura. }
+        - { name: path, in: query, schema: { type: string }, description: "Ruta de la captura, p. ej. pais/2026/03/04/1705.jpg." }
+      responses:
+        "200":
+          description: Titulares en orden de prominencia.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Object" } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Unavailable" }
+  /api/frontpage/top:
+    get:
+      tags: [Noticias]
+      summary: Noticias que más tiempo/mejor posición han tenido en portada
+      parameters:
+        - $ref: "#/components/parameters/source"
+        - { name: hours, in: query, schema: { type: integer, minimum: 1, maximum: 720, default: 24 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 30 } }
+      responses:
+        "200":
+          description: Agregado por medio y URL canónica.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Object" } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Unavailable" }
   /api/stories:
     get:
       tags: [Tendencias]

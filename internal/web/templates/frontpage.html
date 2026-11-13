@@ -1,0 +1,71 @@
+{{define "head"}}<link rel="stylesheet" href="/static/frontpage.css">{{end}}
+{{define "content"}}
+<h1>Portadas</h1>
+<p class="lead-sm">Qué abre cada medio: los titulares se leen de la propia portada al capturarla (posición, tamaño de letra y superficie). La prominencia es una puntuación relativa a cada captura, no una audiencia.</p>
+{{if .Err}}<p class="notice err" role="alert">{{.Err}}</p>{{end}}
+
+<section class="fp-sec" aria-labelledby="fp-h-hoy">
+ <h2 id="fp-h-hoy" class="sec-t">Lo que abre hoy</h2>
+ {{if not .Cards}}
+  <p class="empty">Aún no hay titulares detectados. Se extraen al capturar las portadas (sección Capturas); vuelve cuando haya al menos una captura nueva.</p>
+ {{else}}
+  {{if .Multi}}
+  <div class="fp-multi" role="note">
+   <strong>Varios medios abren con la misma historia</strong>
+   <ul>{{range .Multi}}<li><span class="fp-mt">{{.Title}}</span> <span class="muted small">{{range $i, $o := .Outlets}}{{if $i}} · {{end}}{{$o}}{{end}}</span></li>{{end}}</ul>
+  </div>
+  {{end}}
+  <div class="fp-cards">
+  {{range .Cards}}
+   <article class="fp-card">
+    <h3 class="fp-out">{{.Source.Name}}{{if .Source.Leaning}} <span class="badge {{leanClass .Source.Leaning}}">{{.Source.Leaning}}</span>{{end}}</h3>
+    <p class="muted small fp-at">Captura de <time datetime="{{datetime .At}}">{{fulltime .At}}</time>{{if .Stale}} · <strong>desactualizada</strong>{{end}}</p>
+    <ol class="fp-items">
+    {{range .Items}}
+     <li class="fp-item{{if eq .Rank 1}} lead{{end}}{{if gt .Multi 1}} shared{{end}}">
+      <a class="fp-title" href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.Title}}</a>
+      <div class="fp-meta">
+       <span class="fp-rank" title="Posición en la portada">#{{.Rank}}</span>
+       <span class="fp-bar" role="img" aria-label="Prominencia {{.Pct}} de 100"><i style="width:{{.Pct}}%"></i></span>
+       <span class="muted small">{{.Pct}}{{if .Fold}} · sobre el pliegue{{end}}{{if .FontPx}} · {{.FontPx}} px{{end}}</span>
+      </div>
+      {{if gt .Multi 1}}<p class="fp-shared small"><span class="badge">{{.Multi}} medios</span> {{.MultiTxt}}</p>{{end}}
+      <a class="small fp-hist" href="{{.HistURL}}">Ver evolución en portada</a>
+     </li>
+    {{end}}
+    </ol>
+   </article>
+  {{end}}
+  </div>
+ {{end}}
+</section>
+
+{{if .Top}}
+<section class="fp-sec" aria-labelledby="fp-h-top">
+ <h2 id="fp-h-top" class="sec-t">Más tiempo en portada · últimas 24 h</h2>
+ <div class="fp-tablewrap"><table class="fp-table">
+  <thead><tr><th scope="col">Titular</th><th scope="col">Medio</th><th scope="col" class="num">Capturas</th><th scope="col" class="num">Mejor</th><th scope="col">Visto</th></tr></thead>
+  <tbody>
+  {{range .Top}}
+   <tr><th scope="row"><a href="{{.HistURL}}">{{.Title}}</a></th><td>{{.Source}}</td><td class="num">{{.Captures}}</td><td class="num">#{{.Best}}</td><td class="muted">{{.Span}}</td></tr>
+  {{end}}
+  </tbody>
+ </table></div>
+</section>
+{{end}}
+
+{{if .HistURL}}
+<section class="fp-sec" id="evolucion" aria-labelledby="fp-h-ev">
+ <h2 id="fp-h-ev" class="sec-t">Evolución en portada</h2>
+ {{if .HistErr}}<p class="empty">{{.HistErr}}</p>{{end}}
+ {{range .Hist}}
+  <figure class="fp-hist-fig">
+   <figcaption><strong>{{.Source}}</strong> · <span class="fp-ht">{{.Title}}</span></figcaption>
+   {{.Chart}}
+   <p class="muted small">{{.Summary}}</p>
+  </figure>
+ {{end}}
+ <p><a class="btn ghost" href="/portadas">Cerrar</a></p>
+</section>
+{{end}}
+{{end}}

@@ -271,3 +271,11 @@ func TestShotsCmpJSLogic(t *testing.T) {
 		t.Fatalf("node --test: %v\n%s", err, out)
 	}
 }
+
+func TestShotsCmpLabelsUTF8(t *testing.T) {
+	h, _ := cmpFixture(t)
+	body := do(h, "GET", "/capturas/pais", nil, "").Body.String()
+	if strings.Contains(body, "�") || strings.Contains(body, "\xef\xbf\xbd") {
+		t.Error("broken UTF-8 in labels")
+	}
+}

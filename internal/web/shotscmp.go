@@ -193,7 +193,7 @@ func (s *server) dayStart(t time.Time) time.Time {
 func (s *server) cmpFrameOf(sh domain.Screenshot) cmpFrame {
 	t := sh.TakenAt.In(s.loc)
 	return cmpFrame{ID: sh.ID, T: sh.TakenAt.Unix(), U: shotURL(sh.Path), W: sh.Width, H: sh.Height,
-		L: diasES[t.Weekday()][:3] + " " + t.Format("02/01 15:04"), D: t.Format(dateLayout)}
+		L: string([]rune(diasES[t.Weekday()])[:3]) + " " + t.Format("02/01 15:04"), D: t.Format(dateLayout)}
 }
 
 // cmpRange resolves desde/hasta (inclusive days) with the /capturas ?date= convention
