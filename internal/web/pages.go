@@ -369,6 +369,23 @@ func (s *server) pageShots(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	q := r.URL.Query()
 	day, from, to := s.dayRange(q.Get("date"))
+	if q.Get("date") == "" {
+		// Nothing captured yet today (e.g. before the first scheduled run):
+		// show the most recent day that has captures instead of an empty page.
+		if all, err := s.d.Store.ListScreenshots(ctx, "", from.AddDate(0, 0, -14), to); err == nil && len(all) > 0 {
+			var latest time.Time
+			for _, sh := range all {
+				if sh.TakenAt.After(latest) {
+					latest = sh.TakenAt
+				}
+			}
+			if latest.Before(from) {
+				l := latest.In(s.loc)
+				day = time.Date(l.Year(), l.Month(), l.Day(), 0, 0, 0, 0, s.loc)
+				from, to = day, day.AddDate(0, 0, 1)
+			}
+		}
+	}
 	n := s.now().In(s.loc)
 	today := time.Date(n.Year(), n.Month(), n.Day(), 0, 0, 0, 0, s.loc)
 	v := shotsView{

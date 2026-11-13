@@ -252,4 +252,4 @@ input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-sea
 .more-card:hover{text-decoration:none;border-color:var(--accent)}
 .more-card .ic{width:24px;height:24px;color:var(--accent);flex:none}
 .more-card small{display:block;color:var(--muted);font-size:.85rem;margin-top:.1rem}
-@media (max-width:699px){.nav a.sec{display:none}.nav .more{display:flex}}
+@media (max-width:1279px){.nav a.sec{display:none}.nav .more{display:flex}}

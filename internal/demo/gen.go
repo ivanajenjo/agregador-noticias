@@ -297,7 +297,7 @@ func (g *gen) expand(bk string, b *bucket, pattern string) string {
 			name := m[1 : len(m)-1]
 			switch name {
 			case "pct":
-				return fmt.Sprintf("%d,%d", g.r.IntN(4), g.r.IntN(10))
+				return fmt.Sprintf("%d,%d", g.r.IntN(4), 1+g.r.IntN(9))
 			case "n":
 				return strconv.Itoa(3 + g.r.IntN(93))
 			case "big":
