@@ -185,6 +185,15 @@ type ToneStat struct {
 	Labels []Count
 }
 
+// FrontStat describes the outlet's front-page prominence (optional store).
+type FrontStat struct {
+	Days     int
+	Tracked  int    // distinct headlines seen on its front page
+	Led      int    // of those, headlines that reached rank 1 at least once
+	Current  string // headline that leads the latest capture
+	CurrentT time.Time
+}
+
 // Profile is the complete outlet sheet.
 type Profile struct {
 	Source      domain.Source
@@ -206,6 +215,7 @@ type Profile struct {
 	Shot        *domain.Screenshot
 	Rev         *RevisionStat
 	Tone        *ToneStat
+	Front       *FrontStat
 }
 
 // ---- snapshot of the last 30 days ----
@@ -727,6 +737,20 @@ func (e *Engine) optional(ctx context.Context, p *Profile, arts14 int) {
 		f := domain.RevisionFilter{From: from, To: to, Kind: domain.RevisionTitle, SourceIDs: []string{p.Source.ID}}
 		if n, err := rs.CountRevisions(ctx, f); err == nil {
 			p.Rev = &RevisionStat{Edits: n, Articles: arts14, Days: TermDays}
+		}
+	}
+	if ps, ok := e.st.(domain.ProminenceStore); ok {
+		if items, err := ps.TopItems(ctx, from, to, []string{p.Source.ID}, 500); err == nil && len(items) > 0 {
+			f := &FrontStat{Days: TermDays, Tracked: len(items)}
+			for _, it := range items {
+				if it.BestRank == 1 {
+					f.Led++
+				}
+			}
+			if cur, err := ps.ListFrontItems(ctx, p.Source.ID, time.Time{}); err == nil && len(cur) > 0 {
+				f.Current, f.CurrentT = cur[0].Title, cur[0].TakenAt
+			}
+			p.Front = f
 		}
 	}
 	if ar, ok := e.st.(domain.AnnotationReader); ok {

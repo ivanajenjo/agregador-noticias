@@ -148,3 +148,21 @@ func TestEngineBucketsAndCache(t *testing.T) {
 		t.Fatalf("overview %+v", ov.Outlets)
 	}
 }
+
+func BenchmarkSnapshot60k(b *testing.B) {
+	now := time.Date(2026, 11, 10, 12, 0, 0, 0, time.UTC)
+	fs := &fakeStore{}
+	for i := 0; i < 40; i++ {
+		fs.srcs = append(fs.srcs, domain.Source{ID: string(rune('a'+i%26)) + string(rune('a'+i/26)), Name: "S"})
+	}
+	for i := 0; i < 60000; i++ {
+		fs.arts = append(fs.arts, domain.ArticleLite{ID: int64(i), SourceID: fs.srcs[i%40].ID, Title: "Titular número de prueba sobre vivienda y alquiler " + string(rune('a'+i%26)), At: now.Add(-time.Duration(i) * 43 * time.Second)})
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		e := New(fs, nil, Options{Now: func() time.Time { return now }})
+		if _, err := e.Overview(context.Background()); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

@@ -40,6 +40,7 @@ type Deps struct {
 	Alerts      domain.AlertService    // may be nil: "Probar notificación" disabled
 	Digests     domain.DigestStore     // may be nil: Resumen hidden, routes answer 503
 	DigestGen   domain.DigestGenerator // may be nil: "Generar ahora" answers 503
+	Prominence  domain.ProminenceStore // may be nil: Portadas hidden, routes answer 503
 	Log         *slog.Logger
 
 	// Annotations: tone/intent/framing estimates (internal/annotate). nil => section hidden, routes 503.

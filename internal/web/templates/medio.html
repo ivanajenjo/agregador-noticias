@@ -78,9 +78,10 @@
  {{end}}
 </section>
 
-{{if or .Rev .Tone}}<section class="pf-sec" aria-labelledby="h-ext">
- <h2 id="h-ext">Ediciones y tono</h2>
+{{if or .Rev .Tone .Front}}<section class="pf-sec" aria-labelledby="h-ext">
+ <h2 id="h-ext">Ediciones, portada y tono</h2>
  {{if .Rev}}<p><strong>{{printf "%.1f" .Rev.Rate}}</strong> titulares editados por cada 100 artículos <span class="muted small">(n={{.Rev.Edits}} ediciones en {{.Rev.Articles}} artículos, {{.Rev.Days}} días)</span></p>{{end}}
+ {{if .Front}}<p><strong>{{.Front.Led}}</strong> de {{.Front.Tracked}} titulares de su portada llegaron a abrirla <span class="muted small">(posición 1 en alguna captura, {{.Front.Days}} días)</span>{{if .Front.Current}}. Ahora abre con: «{{.Front.Current}}»{{end}}.</p>{{end}}
  {{if .Tone}}<p class="pf-n">Tono: <strong>estimación</strong> del modelo «{{.Tone.Model}}», n={{.Tone.Total}}, 14 días. No es un hecho.</p>
  <ul class="pf-terms">{{range .ToneLabels}}<li>{{.Label}} <small>{{.N}}</small></li>{{end}}</ul>{{end}}
 </section>{{end}}

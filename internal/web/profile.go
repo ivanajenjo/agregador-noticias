@@ -644,6 +644,9 @@ func (h *profileHandler) apiProfile(w http.ResponseWriter, r *http.Request) {
 	if p.Rev != nil {
 		res["revisions"] = map[string]any{"period_days": p.Rev.Days, "title_edits": p.Rev.Edits, "articles": p.Rev.Articles, "per_100_articles": p.Rev.Rate()}
 	}
+	if p.Front != nil {
+		res["front_page"] = map[string]any{"period_days": p.Front.Days, "headlines_tracked": p.Front.Tracked, "headlines_that_led": p.Front.Led, "current_lead": p.Front.Current}
+	}
 	if p.Tone != nil {
 		res["tone"] = map[string]any{"model": p.Tone.Model, "sample": p.Tone.Total, "labels": p.Tone.Labels, "estimate": true}
 	}
