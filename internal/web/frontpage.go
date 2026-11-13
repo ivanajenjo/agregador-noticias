@@ -340,7 +340,7 @@ func (s *server) histSummary(ps []domain.ItemPoint) string {
 // stepChart draws rank (1 at the top) over time as a step line. Gaps longer
 // than 2.5x the usual capture spacing are treated as "not on the front page".
 func (s *server) stepChart(ps []domain.ItemPoint) template.HTML {
-	const W, H, L, R, T, B = 640.0, 220.0, 34.0, 12.0, 14.0, 30.0
+	const W, H, L, R, T, B = 480.0, 220.0, 34.0, 12.0, 14.0, 30.0
 	if len(ps) == 0 {
 		return ""
 	}

@@ -27,7 +27,7 @@
       <div class="fp-meta">
        <span class="fp-rank" title="Posición en la portada">#{{.Rank}}</span>
        <span class="fp-bar" role="img" aria-label="Prominencia {{.Pct}} de 100"><i style="width:{{.Pct}}%"></i></span>
-       <span class="muted small">{{.Pct}}{{if .Fold}} · sobre el pliegue{{end}}{{if .FontPx}} · {{.FontPx}} px{{end}}</span>
+       <span class="muted small">{{.Pct}}/100{{if .FontPx}} · {{.FontPx}} px{{end}}</span>{{if .Fold}}<span class="muted small">sobre el pliegue</span>{{end}}
       </div>
       {{if gt .Multi 1}}<p class="fp-shared small"><span class="badge">{{.Multi}} medios</span> {{.MultiTxt}}</p>{{end}}
       <a class="small fp-hist" href="{{.HistURL}}">Ver evolución en portada</a>

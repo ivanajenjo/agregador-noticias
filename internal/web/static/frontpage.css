@@ -1,5 +1,6 @@
 /* Portadas: qué abre cada medio + overlay de titulares en el visor. */
 .fp-sec{margin:0 0 2rem}
+.fp-sec>h2{font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;font-family:var(--sans);font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:.4rem;margin:0 0 1rem}
 .fp-cards{display:grid;gap:1rem;grid-template-columns:minmax(0,1fr)}
 @media (min-width:640px){.fp-cards{grid-template-columns:repeat(auto-fill,minmax(17rem,1fr))}}
 .fp-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:.9rem 1rem;min-width:0}
@@ -10,12 +11,13 @@
 .fp-item:first-child{border-top:0;padding-top:0}
 .fp-title{display:block;font-family:var(--serif);font-size:1.05rem;line-height:1.3;overflow-wrap:anywhere;color:var(--text)}
 .fp-item.lead .fp-title{font-size:1.35rem;line-height:1.2}
-.fp-meta{display:flex;gap:.5rem;align-items:center;margin:.4rem 0 .2rem}
+.fp-meta{display:flex;gap:.2rem .5rem;align-items:center;flex-wrap:wrap;margin:.4rem 0 .2rem;font-family:var(--sans)}
+.fp-meta .small{white-space:nowrap}
 .fp-rank{font-weight:600;font-variant-numeric:tabular-nums;color:var(--accent-text);min-width:1.8rem}
 .fp-bar{flex:0 0 5.5rem;height:.5rem;border-radius:999px;background:var(--surface2);overflow:hidden;border:1px solid var(--border)}
 .fp-bar i{display:block;height:100%;background:var(--accent)}
 .fp-item.shared{border-left:3px solid var(--accent);padding-left:.6rem}
-.fp-shared{margin:.2rem 0}
+.fp-shared{margin:.2rem 0;font-family:var(--sans)}
 .fp-hist{display:inline-flex;align-items:center;min-height:44px}
 .fp-multi{border:1px solid var(--border);border-left:3px solid var(--accent);background:var(--surface);border-radius:var(--r);padding:.7rem 1rem;margin:0 0 1rem}
 .fp-multi ul{margin:.3rem 0 0;padding-left:1.1rem;display:grid;gap:.3rem}
@@ -31,7 +33,7 @@
 .fp-ht{font-family:var(--serif)}
 .fp-chart{display:block;width:100%;height:auto;max-height:260px}
 .fp-chart .g{stroke:var(--border);stroke-width:1}
-.fp-chart .t{fill:var(--muted);font-size:11px;font-family:var(--sans)}
+.fp-chart .t{fill:var(--muted);font-size:12px;font-family:var(--sans)}
 .fp-chart .line{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linejoin:round}
 .fp-chart .dot{fill:var(--surface);stroke:var(--accent);stroke-width:2}
 .fp-chart .dot.top{fill:var(--accent)}
@@ -45,7 +47,7 @@
 .fp-box.sel{outline:2px solid #fff;background:rgba(255,255,255,.18)}
 .fp-box span{position:absolute;left:-2px;top:-2px;transform:translateY(-100%);background:#ffb02e;color:#000;font:600 11px/1.3 var(--sans);padding:0 .3rem;border-radius:3px 3px 0 0}
 .fp-box.lead span{background:#ff5a3c}
-.fp-info{position:absolute;left:.6rem;right:.6rem;bottom:calc(.6rem + var(--sab));z-index:3;background:rgba(20,20,19,.94);color:#f0eee6;border:1px solid #555;border-radius:12px;padding:.7rem .9rem;max-width:34rem;margin:0 auto;font-size:.9rem;touch-action:auto}
+.fp-info{position:absolute;left:.6rem;right:.6rem;bottom:calc(.6rem + var(--sab));z-index:3;background:#141413;color:#f0eee6;border:1px solid #555;border-radius:12px;padding:.7rem .9rem;max-width:34rem;margin:0 auto;font-size:.9rem;touch-action:auto}
 .fp-info .fp-it{font-family:var(--serif);font-size:1.05rem;line-height:1.3;margin:0 0 .4rem;overflow-wrap:anywhere}
 .fp-info .fp-ib{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
 .fp-info a{color:#ffb98f;display:inline-flex;align-items:center;min-height:44px}
