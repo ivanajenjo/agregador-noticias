@@ -34,19 +34,31 @@
 
 ```
 cmd/agregador/          main: wiring, señales, apagado ordenado
-internal/domain/        tipos y INTERFACES (contrato entre paquetes)
-internal/config/        carga YAML+env, validación
-internal/store/         SQLite: migraciones, artículos, FTS5, vectores, capturas, estado de jobs
-internal/ingest/        fetch feeds, readability, normalización, dedup  → domain.Store
-internal/shot/          capturas con chromedp, cookies, retención
-internal/llm/           cliente OpenAI-compat (Embedder, Chat stream), EmbedWorker, health
-internal/rag/           chunking, búsqueda híbrida (RRF), prompts, comparador
-internal/web/           handlers, templates, static (htmx), SSE, auth básica
-internal/sched/         cron jobs
-config/                 sources.yaml, config.example.yaml
-deploy/                 Dockerfile, compose, systemd, docs de despliegue
-docs/                   requisitos, arquitectura
+cmd/demo-seed/          generador de datos de demostración (dev)
+internal/domain/        tipos e INTERFACES (contrato entre paquetes)
+internal/config/        YAML + env, validación
+internal/store/         SQLite: migraciones, artículos, FTS5, vectores, capturas, revisiones, seguimientos,
+                        resúmenes, anotaciones, portadas, retención
+internal/ingest/        feeds, readability, normalización, dedup, seguimiento de revisiones
+internal/shot/          capturas con chromedp, cookies, extracción de titulares de portada
+internal/llm/           cliente OpenAI-compat (embeddings, chat SSE), worker de embeddings
+internal/rag/           búsqueda híbrida (RRF), prompts, comparador
+internal/trends/        términos en alza e historias (sin LLM)
+internal/framing/       vocabulario distintivo, diff de titulares, puntos ciegos
+internal/revisions/     materialidad y diff de cambios de titular
+internal/profile/       ficha de medio
+internal/digest/        resumen diario (+ narrativa con LLM verificada)
+internal/alerts/        alertas ntfy/Telegram/webhook y seguimientos
+internal/annotate/      anotaciones de tono/intención con un modelo pequeño
+internal/ops/           mantenimiento y retención
+internal/sched/         cron interno + latido
+internal/web/           handlers, plantillas, estáticos, SSE, PWA, métricas, OpenAPI
+config/                 sources.yaml (47 medios), config.example.yaml
+deploy/                 Dockerfile, Caddyfile, scripts, systemd
+docs/                   requisitos, arquitectura, funcionalidades, API, operación, despliegue, investigación
 ```
+
+Ver [CONTRIBUIR.md](CONTRIBUIR.md) para añadir funcionalidades (registro de navegación, hooks de rutas, ranuras de migración).
 
 ## Reglas para trabajar en paralelo
 - Los contratos viven en `internal/domain`. **No se modifican sin avisar**; si hace falta algo nuevo, se añade (no se rompe).
