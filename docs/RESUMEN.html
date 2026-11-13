@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Agregador de noticias — resumen de una página</title>
+<meta name="viewport" content="width=1600">
+<style>
+@page { size: 1600px 1130px; margin: 0 }
+:root{
+  --bg:#faf9f5; --surface:#fffefb; --surface2:#f0eee6; --text:#141413; --muted:#6b6a64; --border:#e3e0d4;
+  --accent:#c6613f; --accent-soft:#f3e1d9; --serif: ui-serif, Georgia, "Iowan Old Style", Cambria, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --l0:#b9573a; --l1:#d68e6f; --l2:#b9a97a; --l3:#8aa88f; --l4:#5f86a0;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:#d9d6cb}
+body{font:15px/1.45 var(--sans);color:var(--text);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.page{width:1600px;height:1130px;margin:0 auto;background:var(--bg);padding:26px 36px 18px;display:grid;
+  grid-template-rows:auto auto minmax(0,1fr) auto;gap:13px;overflow:hidden;position:relative}
+h1,h2,h3{font-family:var(--serif);font-weight:400;margin:0;letter-spacing:-.015em}
+/* header */
+.head{display:flex;align-items:center;gap:22px}
+.mark{width:52px;height:52px;flex:none}
+.head h1{font-size:42px;line-height:1}
+.head .tag{color:var(--muted);font-size:16.5px;margin-top:4px;max-width:1010px;line-height:1.35}
+.chips{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:480px}
+.chip{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:5px 13px;font-size:13px;color:var(--muted)}
+.chip b{color:var(--text);font-weight:600}
+/* kpis */
+.kpis{display:grid;grid-template-columns:repeat(8,1fr);gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 12px}
+.kpi .n{font-family:var(--serif);font-size:28px;line-height:1;color:var(--accent)}
+.kpi .n small{font-size:15px;color:var(--muted)}
+.kpi .l{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.22}
+/* body */
+.body{display:grid;grid-template-columns:392px 1fr 352px;gap:22px;min-height:0}
+.col{display:flex;flex-direction:column;gap:11px;min-height:0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 15px}
+.card h2{font-size:19px;margin-bottom:6px}
+.eyebrow{font-size:11.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--accent);font-weight:600;margin-bottom:4px}
+.pillar{display:grid;grid-template-columns:32px 1fr;gap:9px;margin:0 0 8px}
+.pillar:last-child{margin-bottom:0}
+.pillar .ic{width:32px;height:32px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.pillar h3{font-size:15.5px;margin-bottom:2px;font-family:var(--sans);font-weight:600;letter-spacing:0}
+.pillar p{margin:0;font-size:12.6px;color:#3d3c38;line-height:1.34}
+.pillar p b{font-weight:600;color:var(--text)}
+ul.tight{margin:0;padding-left:16px;font-size:12.6px;color:#3d3c38;line-height:1.34}
+ul.tight li{margin:0 0 2px}
+ul.tight b{color:var(--text)}
+.note{font-size:12px;color:var(--muted);line-height:1.35}
+/* center collage */
+.collage{display:grid;grid-template-columns:1fr 150px 150px;grid-template-rows:auto 1fr;gap:12px;min-height:0;height:100%}
+.shot{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface);position:relative;min-height:0}
+.shot img{display:block;width:100%;height:100%;object-fit:cover;object-position:top left}
+.shot .cap{position:absolute;right:10px;top:10px;background:rgba(20,20,19,.78);color:#fff;font-size:11.5px;padding:3px 10px;border-radius:999px}
+.s-main{grid-column:1;grid-row:1 / span 2}
+.phone{border-radius:22px;border:5px solid #1f1e1d;background:#1f1e1d}
+.phone img{border-radius:16px;object-position:top center}
+.stack{grid-column:2 / span 2;grid-row:1 / span 2;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr;gap:12px}
+.mid{display:grid;grid-template-rows:1fr 1fr;gap:12px;min-height:0}
+.collage2{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:0.8fr 1fr;gap:12px;min-height:0;height:100%}
+/* right column */
+.arch{width:100%;height:auto;display:block}
+.stack-row{display:flex;flex-wrap:wrap;gap:6px}
+.tech{font-size:12.5px;background:var(--surface2);border-radius:8px;padding:3px 9px;color:#3d3c38}
+.foot{display:flex;gap:26px;align-items:flex-start;border-top:1px solid var(--border);padding-top:12px;font-size:12px;color:var(--muted)}
+.foot b{color:var(--text)}
+.foot .grow{flex:1}
+.bar{display:flex;height:9px;border-radius:5px;overflow:hidden;margin:6px 0 4px}
+.bar i{flex:1}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="head">
+  <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="5" fill="#c6613f"/><g fill="#faf9f5"><rect x="5" y="5" width="14" height="2.6" rx=".7"/><rect x="5" y="9.4" width="6" height="6" rx="1"/><rect x="13" y="9.4" width="6" height="1.4" rx=".7"/><rect x="13" y="12.4" width="6" height="1.4" rx=".7"/><rect x="5" y="17" width="14" height="1.4" rx=".7"/></g></svg>
+  <div>
+    <h1>Agregador de noticias</h1>
+    <div class="tag">Qué cuentan los medios españoles, quién lo cuenta primero y <em>cómo</em> lo cuenta — autoalojado en una Raspberry Pi y con la IA en tu propio ordenador.</div>
+  </div>
+  <div class="chips">
+    <span class="chip"><b>Go</b> sin CGO</span><span class="chip"><b>SQLite</b> + FTS5 + vectores</span>
+    <span class="chip"><b>htmx</b> · PWA móvil</span><span class="chip"><b>Docker</b> arm64/amd64</span>
+    <span class="chip"><b>LLM</b> opcional (API OpenAI)</span>
+  </div>
+</header>
+
+<section class="kpis">
+  <div class="kpi"><div class="n">47</div><div class="l">medios, <b>81 feeds</b> verificados</div></div>
+  <div class="kpi"><div class="n">13</div><div class="l">secciones, <b>65 rutas</b> con OpenAPI</div></div>
+  <div class="kpi"><div class="n">3<small>/día</small></div><div class="l">capturas de portada por medio</div></div>
+  <div class="kpi"><div class="n">0</div><div class="l">LLM necesarios: <b>funciona sin IA</b></div></div>
+  <div class="kpi"><div class="n">18<small> MB</small></div><div class="l">binario arm64, <b>~45 MB</b> de RAM</div></div>
+  <div class="kpi"><div class="n">18<small> ms</small></div><div class="l">vectores en <b>50 000</b> artículos</div></div>
+  <div class="kpi"><div class="n">23,7<small>k</small></div><div class="l">líneas de Go + <b>9,4k</b> de tests</div></div>
+  <div class="kpi"><div class="n">14<small>k</small></div><div class="l">palabras de documentación</div></div>
+</section>
+
+<main class="body">
+
+  <!-- LEFT -->
+  <div class="col">
+    <section class="card">
+      <div class="eyebrow">Qué resuelve</div>
+      <h2>Tres pilares</h2>
+      <div class="pillar">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg></div>
+        <div><h3>Recoger</h3><p><b>Ingesta RSS</b> con texto completo, <b>capturas</b> de portada 3 veces al día, qué titular <b>abre</b> cada medio y <b>cambios de titular</b> tras publicar.</p></div>
+      </div>
+      <div class="pillar">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg></div>
+        <div><h3>Entender</h3><p><b>Tendencias</b> e historias entre medios, <b>encuadre</b> (vocabulario distintivo y diff de titulares), <b>puntos ciegos</b>, ficha de cada medio, <b>tono</b> con un modelo pequeño y <b>resumen diario</b>.</p></div>
+      </div>
+      <div class="pillar">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7zM10 20a2 2 0 0 0 4 0"/></svg></div>
+        <div><h3>Preguntar y avisar</h3><p>Búsqueda híbrida (FTS + vectores) y <b>RAG con citas</b> con modo «comparar medios». <b>Alertas</b> a ntfy, Telegram o webhook cuando una historia la cubren ≥ N medios.</p></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="eyebrow">Lo diferencial</div>
+      <h2>Comparar, no solo agregar</h2>
+      <ul class="tight">
+        <li><b>Quién la dio primero</b> y quién no la cubre.</li>
+        <li><b>Palabras que solo usa un bloque</b>: log-odds con prior de Dirichlet (<i>Fightin' Words</i>), sin LLM.</li>
+        <li><b>Stealth edits</b>: antes → después con diff de palabras.</li>
+        <li><b>Portadas en el tiempo</b>: deslizador, mapa de diferencias y <i>timelapse</i>.</li>
+        <li>Etiquetas <b>editables y subjetivas</b>; las del modelo, siempre «estimaciones».</li>
+      </ul>
+    </section>
+
+    <section class="card" style="flex:1">
+      <div class="eyebrow">Cómo se hizo</div>
+      <h2>Proceso</h2>
+      <ul class="tight">
+        <li>Requisitos y contratos primero; <b>17 paquetes</b> independientes.</li>
+        <li><b>~20 subagentes</b> en paralelo, cada uno dueño de sus ficheros; integración y medición propias.</li>
+        <li>Investigación previa de productos y métodos (<code>docs/INVESTIGACION.md</code>).</li>
+      </ul>
+    </section>
+  </div>
+
+  <!-- CENTER -->
+  <div class="col">
+    <div class="collage2" style="flex:1">
+      <figure class="shot" style="margin:0;grid-column:1 / span 2"><img src="resumen/encuadre.jpg" alt="Encuadre: titulares comparados con diff de palabras"><span class="cap">Encuadre · titulares comparados y quién no la cubre</span></figure>
+      <figure class="shot" style="margin:0"><img src="resumen/tendencias.jpg" alt="Tendencias: historias destacadas"><span class="cap">Tendencias · historias entre medios</span></figure>
+      <div style="display:flex;gap:12px;justify-content:center;align-items:flex-start;min-height:0">
+        <figure class="shot phone" style="margin:0;width:calc(43% - 6px);aspect-ratio:390/844"><img src="resumen/m-portada.jpg" alt="Portada móvil"></figure>
+        <figure class="shot phone" style="margin:0;width:calc(43% - 6px);aspect-ratio:390/844"><img src="resumen/m-preguntar.jpg" alt="Preguntar móvil"></figure>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;height:238px">
+      <figure class="shot" style="margin:0"><img src="resumen/diferencias.jpg" alt="Comparador de portadas: mapa de diferencias"><span class="cap">Capturas · mapa de diferencias entre dos portadas</span></figure>
+      <figure class="shot" style="margin:0"><img src="resumen/portada.jpg" alt="Portada por medios"><span class="cap">Portada · columnas por medio, de izquierda a derecha</span></figure>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="col">
+    <section class="card">
+      <div class="eyebrow">Arquitectura</div>
+      <h2>La Pi hace lo ligero</h2>
+      <svg class="arch" viewBox="0 0 316 232" role="img" aria-label="Arquitectura: la Raspberry ejecuta un binario Go con SQLite; el Mac ejecuta el modelo; Chromium bajo demanda">
+        <rect x="1" y="1" width="206" height="230" rx="12" fill="#fffefb" stroke="#e3e0d4"/>
+        <text x="14" y="21" font-size="11" fill="#6b6a64" font-family="system-ui">Raspberry Pi · Docker (~45 MB)</text>
+        <g font-family="system-ui" font-size="11">
+          <rect x="14" y="32" width="86" height="30" rx="7" fill="#f3e1d9"/><text x="57" y="51" text-anchor="middle" fill="#141413">ingesta RSS</text>
+          <rect x="108" y="32" width="86" height="30" rx="7" fill="#f3e1d9"/><text x="151" y="51" text-anchor="middle" fill="#141413">capturas</text>
+          <rect x="14" y="70" width="86" height="30" rx="7" fill="#f0eee6"/><text x="57" y="89" text-anchor="middle" fill="#141413">tendencias</text>
+          <rect x="108" y="70" width="86" height="30" rx="7" fill="#f0eee6"/><text x="151" y="89" text-anchor="middle" fill="#141413">alertas · resumen</text>
+          <rect x="14" y="108" width="180" height="34" rx="7" fill="#c6613f"/><text x="104" y="129" text-anchor="middle" fill="#fff" font-weight="600">SQLite · FTS5 · vectores</text>
+          <rect x="14" y="150" width="180" height="30" rx="7" fill="#f0eee6"/><text x="104" y="169" text-anchor="middle" fill="#141413">web (htmx · PWA) · API · métricas</text>
+          <text x="104" y="205" text-anchor="middle" fill="#6b6a64" font-size="10.5">sin LLM: todo salvo RAG y narrativa</text>
+          <text x="104" y="220" text-anchor="middle" fill="#6b6a64" font-size="10.5">sigue funcionando</text>
+        </g>
+        <g font-family="system-ui" font-size="11">
+          <rect x="226" y="24" width="88" height="76" rx="10" fill="#fffefb" stroke="#e3e0d4"/>
+          <text x="270" y="44" text-anchor="middle" fill="#6b6a64" font-size="10">Mac / PC</text>
+          <text x="270" y="64" text-anchor="middle" fill="#141413">LLM +</text><text x="270" y="79" text-anchor="middle" fill="#141413">embeddings</text><text x="270" y="93" text-anchor="middle" fill="#6b6a64" font-size="9.5">API OpenAI</text>
+          <rect x="226" y="130" width="88" height="52" rx="10" fill="#fffefb" stroke="#e3e0d4" stroke-dasharray="4 3"/>
+          <text x="270" y="150" text-anchor="middle" fill="#6b6a64" font-size="10">opcional</text>
+          <text x="270" y="168" text-anchor="middle" fill="#141413">Chromium</text><text x="270" y="179" text-anchor="middle" fill="#6b6a64" font-size="9.5">solo al capturar</text>
+        </g>
+        <g stroke="#c6613f" stroke-width="1.4" fill="none" stroke-linecap="round"><path d="M207 62 H226"/><path d="M207 158 H226"/></g>
+        <g fill="#c6613f"><path d="M226 62l-6-3.5v7z"/><path d="M226 158l-6-3.5v7z"/></g>
+      </svg>
+    </section>
+
+    <section class="card">
+      <div class="eyebrow">Despliegue</div>
+      <h2>Docker en tu Raspberry</h2>
+      <ul class="tight">
+        <li>Imagen <b>multi-arch</b> (CI → GHCR), <code>compose</code> con límites, sin root y FS de solo lectura.</li>
+        <li>Perfiles <b>Chromium</b> bajo demanda y <b>HTTPS</b> (Caddy) para la PWA.</li>
+        <li>Backups, retención, <code>/metrics</code> y <code>/readyz</code>; guía en <code>docs/DESPLIEGUE.md</code>.</li>
+      </ul>
+    </section>
+
+    <section class="card" style="flex:1">
+      <div class="eyebrow">Honestidad</div>
+      <h2>Límites y siguientes pasos</h2>
+      <ul class="tight">
+        <li>Chat, embeddings y tono <b>probados con servidores simulados</b>: falta Ollama real.</li>
+        <li>arm64 compilado; imagen probada en amd64: <b>falta correr en la Pi</b>.</li>
+        <li>Las capturas usan <b>datos de demostración ficticios</b>.</li>
+        <li>Siguiente: conjunto de oro, veto manual de historias, consultas como feeds.</li>
+      </ul>
+    </section>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="grow"><b>Etiquetas de línea editorial</b> subjetivas y editables (<code>config/sources.yaml</code>); las anotaciones de modelos son estimaciones, no hechos. Uso personal en LAN: se guardan titular, resumen y enlace; no se republican contenidos.</div>
+  <div>github.com/<b>ivanajenjo/agregador-noticias</b></div>
+  <div class="bar" style="width:150px;margin:2px 0 0"><i style="background:var(--l0)"></i><i style="background:var(--l1)"></i><i style="background:var(--l2)"></i><i style="background:var(--l3)"></i><i style="background:var(--l4)"></i></div>
+</footer>
+
+</div>
+</body>
+</html>
