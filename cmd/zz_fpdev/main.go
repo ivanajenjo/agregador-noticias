@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"html"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -49,7 +50,7 @@ func main() {
 		s := page
 		for i, k := range order {
 			s = strings.ReplaceAll(s, fmt.Sprintf("@H%d@", i+1), k)
-			s = strings.ReplaceAll(s, fmt.Sprintf("@T%d@", i+1), titles[k])
+			s = strings.ReplaceAll(s, fmt.Sprintf("@T%d@", i+1), html.EscapeString(titles[k]))
 		}
 		return s
 	}
