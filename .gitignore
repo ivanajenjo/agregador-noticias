@@ -9,3 +9,4 @@ backups/
 config/config.yaml
 .last-image
 caddy-root.crt
+demo-data/
