@@ -1,0 +1,53 @@
+{{define "head"}}<link rel="stylesheet" href="/static/revisions.css">{{end}}
+
+{{define "content"}}
+<h1>Titulares modificados</h1>
+<p class="lead-sm">Cambios que los medios hacen en titulares y resúmenes después de publicar. Se detectan al comparar cada lectura de los feeds con lo que ya teníamos; se ignoran erratas, mayúsculas, tildes y sufijos del medio.</p>
+
+<div class="rbar">
+ <nav class="seg" aria-label="Ventana de tiempo"><span class="muted small">Últimos</span>
+  {{range .Ventanas}}<a class="chip sm{{if .On}} on{{end}}" href="{{.URL}}"{{if .On}} aria-current="true"{{end}}>{{.Label}}</a>{{end}}
+ </nav>
+ <nav class="seg" aria-label="Tipo de cambio">
+  {{range .Tipos}}<a class="chip sm{{if .On}} on{{end}}" href="{{.URL}}"{{if .On}} aria-current="true"{{end}}>{{.Label}}</a>{{end}}
+ </nav>
+</div>
+{{if or .Sources .Leanings}}
+<form class="tfilter" action="/cambios" method="get">
+ {{if ne .Ventana "7d"}}<input type="hidden" name="ventana" value="{{.Ventana}}">{{end}}{{if .Tipo}}<input type="hidden" name="tipo" value="{{.Tipo}}">{{end}}
+ <details class="filters"{{if .Fuentes}} open{{end}}>
+  <summary>Medios y línea editorial{{if .Fuentes}} <span class="count">{{.Fuentes}}</span>{{end}}</summary>
+  <div class="fgrid">
+   {{if .Leanings}}<fieldset><legend>Línea editorial</legend>
+    {{range .Leanings}}<label class="chk"><input type="checkbox" name="lineas" value="{{.Name}}"{{if .Checked}} checked{{end}}> <span>{{.Name}}</span></label>{{end}}
+   </fieldset>{{end}}
+   <fieldset><legend>Medios</legend>
+    {{range .Sources}}<label class="chk"><input type="checkbox" name="fuentes" value="{{.ID}}"{{if .Checked}} checked{{end}}> <span>{{.Name}}</span></label>{{end}}
+   </fieldset>
+  </div>
+  <button type="submit">Aplicar</button>
+ </details>
+</form>
+{{end}}
+
+{{if .Summary}}<p class="rsum" role="status">{{.Summary}}.</p>{{end}}
+
+{{if not .Cards}}
+ <p class="empty">No se han detectado cambios en este periodo. Los cambios aparecen cuando un medio modifica un titular o resumen que ya habíamos guardado; prueba con una ventana más amplia o vuelve más tarde.</p>
+{{else}}
+<ol class="revs">
+{{range .Cards}}
+ <li class="rev">
+  <div class="meta rhead"><span class="badge {{leanClass .Leaning}}">{{.Source}}</span> <span class="badge mode-t">{{.KindLabel}}</span>
+   <time datetime="{{datetime .ChangedAt}}">{{ago .ChangedAt}}</time> <span>· modificado {{.Delay}} después de publicarse</span></div>
+  <div class="rpair">
+   <div class="rside before"><span class="rlbl">Antes</span><p class="rtxt">{{.Before}}</p></div>
+   <div class="rside after"><span class="rlbl">Después</span><p class="rtxt">{{.After}}</p></div>
+  </div>
+  <p class="ractions"><a href="{{.ArticleURL}}">Ver artículo e historial</a>{{if .ExtURL}} · <a href="{{.ExtURL}}" target="_blank" rel="noopener noreferrer">Leer en {{.Source}} ↗</a>{{end}}</p>
+ </li>
+{{end}}
+</ol>
+{{if .NextURL}}<p><a class="btn" href="{{.NextURL}}">Ver más cambios</a></p>{{end}}
+{{end}}
+{{end}}

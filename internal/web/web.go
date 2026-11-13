@@ -31,14 +31,21 @@ type Deps struct {
 	Retriever   domain.Retriever
 	Ingestor    domain.Ingestor
 	Shots       domain.ShotTaker
-	LLM         domain.StatusProvider // may be nil
-	Trends      domain.TrendProvider  // may be nil: Tendencias hidden, routes answer 503
-	ShotsDir    string                // served read-only at /shots/
-	Maintenance domain.Maintainer     // may be nil: POST /api/jobs/maintenance and GET /api/maintenance answer 503
-	Heartbeat   domain.Heartbeat      // may be nil: /readyz skips the scheduler check
-	Follow      domain.FollowStore    // may be nil: Seguimientos hidden, routes answer 503
-	Alerts      domain.AlertService   // may be nil: "Probar notificación" disabled
+	LLM         domain.StatusProvider  // may be nil
+	Trends      domain.TrendProvider   // may be nil: Tendencias hidden, routes answer 503
+	ShotsDir    string                 // served read-only at /shots/
+	Maintenance domain.Maintainer      // may be nil: POST /api/jobs/maintenance and GET /api/maintenance answer 503
+	Heartbeat   domain.Heartbeat       // may be nil: /readyz skips the scheduler check
+	Follow      domain.FollowStore     // may be nil: Seguimientos hidden, routes answer 503
+	Alerts      domain.AlertService    // may be nil: "Probar notificación" disabled
+	Digests     domain.DigestStore     // may be nil: Resumen hidden, routes answer 503
+	DigestGen   domain.DigestGenerator // may be nil: "Generar ahora" answers 503
 	Log         *slog.Logger
+
+	// Annotations: tone/intent/framing estimates (internal/annotate). nil => section hidden, routes 503.
+	Annotations        domain.AnnotationReader
+	AnnotationModel    string // configured model whose rows are shown by default
+	AnnotationsEnabled bool   // worker enabled; false + no stored rows => hidden
 }
 
 // Options configure the handler.
@@ -48,6 +55,7 @@ type Options struct {
 	Location      *time.Location // default Europe/Madrid (falls back to UTC if tzdata is missing)
 	Version       string
 	EmbedModel    string // passed to Store.Stats for embedding counters (optional)
+	PublicURL     string // optional absolute base URL for feed links (else derived from the request)
 }
 
 type server struct {

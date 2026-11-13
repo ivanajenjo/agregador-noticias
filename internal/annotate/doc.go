@@ -14,6 +14,8 @@
 // Calibration: see Evaluate and docs/anotaciones-gold.example.json.
 package annotate
 
+import "github.com/ivanajenjo/agregador-noticias/internal/domain"
+
 // PromptVersion is stored in the annotation data so rows made with a
 // different prompt can be told apart.
 const PromptVersion = 1
@@ -21,8 +23,7 @@ const PromptVersion = 1
 // Closed vocabularies. The model must answer with one of these (accents and
 // case are tolerated when parsing, anything else is discarded).
 var (
-	Tones   = []string{"neutral", "alarmista", "laudatorio", "crítico", "sensacionalista", "humorístico"}
-	Intents = []string{"informar", "opinar", "persuadir", "entretener", "promocionar"}
-	// Frames follow the generic news frames of Semetko & Valkenburg (2000).
-	Frames = []string{"conflicto", "interés humano", "económico", "moralidad", "responsabilidad", "otros"}
+	Tones   = domain.AnnoTones
+	Intents = domain.AnnoIntents
+	Frames  = domain.AnnoFrames
 )

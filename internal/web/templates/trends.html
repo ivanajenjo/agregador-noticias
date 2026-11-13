@@ -55,6 +55,7 @@
    {{if .MissingTxt}}<p class="muted small missing">No lo cubren: {{.MissingTxt}}</p>{{end}}
    <div class="sactions">
     <a class="btn" href="{{.CompareURL}}">Comparar enfoques</a>
+    <a class="btn ghost" href="/encuadre/{{.ID}}{{if ne $.Ventana "24h"}}?ventana={{$.Ventana}}{{end}}">Ver encuadre</a>
     {{range .TermLinks}}<a class="btn ghost" href="{{.URL}}">{{.Text}}</a>{{end}}
    </div>
   </li>

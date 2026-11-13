@@ -1,0 +1,68 @@
+{{define "head"}}<link rel="stylesheet" href="/static/framing.css?v={{.Version}}">
+{{end}}
+{{define "content"}}
+<h1>Encuadre y puntos ciegos</h1>
+<p class="lead-sm">Cómo cuentan los medios una misma historia y qué historias solo aparecen en un lado del espectro. Cálculo estadístico sobre titulares y resúmenes, sin IA. Describe qué se publica en nuestras fuentes; no atribuye intenciones.</p>
+<div id="enc" aria-live="polite">{{template "framing_body" .}}</div>
+{{end}}
+
+{{define "framing_body"}}
+<nav class="tabs" aria-label="Vista">
+ <a class="chip{{if eq .Vista "ciegos"}} on{{end}}" href="{{.TabBlind}}" hx-get="{{.TabBlind}}" hx-target="#enc" hx-push-url="true"{{if eq .Vista "ciegos"}} aria-current="page"{{end}}>Puntos ciegos{{if .Spots}} <span class="count">{{len .Spots}}</span>{{end}}</a>
+ <a class="chip{{if eq .Vista "comparadas"}} on{{end}}" href="{{.TabCompared}}" hx-get="{{.TabCompared}}" hx-target="#enc" hx-push-url="true"{{if eq .Vista "comparadas"}} aria-current="page"{{end}}>Historias comparadas</a>
+</nav>
+<div class="tbar ftools">
+ <nav class="seg" aria-label="Ventana de tiempo"><span class="muted small">Últimas</span>
+  {{range .Ventanas}}<a class="chip sm{{if .On}} on{{end}}" aria-label="{{.Label}}" href="{{.URL}}" hx-get="{{.URL}}" hx-target="#enc" hx-push-url="true"{{if .On}} aria-current="true"{{end}}>{{.Short}}</a>{{end}}
+ </nav>
+ <nav class="seg" aria-label="Agrupación"><span class="muted small">Agrupar en</span>
+  {{range .BloqueOpts}}<a class="chip sm{{if .On}} on{{end}}" title="{{.Label}}" href="{{.URL}}" hx-get="{{.URL}}" hx-target="#enc" hx-push-url="true"{{if .On}} aria-current="true"{{end}}>{{.Short}}</a>{{end}}
+ </nav>
+</div>
+
+{{if .Err}}<p class="notice err" role="alert">{{.Err}}</p>
+{{else}}
+ {{if eq .Vista "ciegos"}}
+  {{if not .Spots}}
+   <p class="empty">No se ha detectado ninguna historia con la cobertura concentrada en un solo bloque{{if .Total}} entre las {{.Total}} analizadas ({{.Assessed}} con suficientes medios por bloque para compararlas){{end}}. Prueba con una ventana más amplia o mira las historias comparadas.</p>
+  {{else}}
+   <p class="muted small">Historias que cubren sobre todo medios de un bloque mientras que en los demás, que suelen publicar un volumen parecido, no se ha detectado en nuestras fuentes. Puede deberse a cómo se agrupan los titulares o a feeds incompletos.</p>
+   {{template "framing_list" .Spots}}
+  {{end}}
+ {{else}}
+  {{if not .Compared}}
+   <p class="empty">Aún no hay historias cubiertas por al menos dos bloques editoriales en esta ventana.</p>
+  {{else}}
+   <p class="muted small">Historias que cubren medios de al menos dos bloques: abre una para ver cómo difiere la redacción.</p>
+   {{template "framing_list" .Compared}}
+  {{end}}
+ {{end}}
+ <p class="muted small">Calculado a las {{clock .Generated}} · {{.Total}} historias en las últimas {{.WindowLbl}}. Umbrales: al menos {{.Cfg.MinCovered}} medios, bloques con {{.Cfg.MinBlockOutlets}}+ medios, concentración ≥ {{.SkewPct}} %.</p>
+{{end}}
+{{end}}
+
+{{define "framing_list"}}
+<ol class="stories fstories">
+{{range .}}
+ <li class="story">
+  <h2 class="stitle"><a href="{{.DetailURL}}">{{.Story.Title}}</a></h2>
+  <div class="meta sbadges"><span class="badge">{{.Story.Sources}} medios</span><span class="badge">{{.Story.Articles}} artículos</span></div>
+  {{if .Summary}}<p class="fsum">{{.Summary}}.</p>{{end}}
+  {{if .Statement}}<p class="fstate">{{.Statement}}</p>{{end}}
+  <table class="fmatrix">
+   <caption class="sr">Cobertura por bloque editorial</caption>
+   <tbody>
+   {{range .Rows}}{{if or .Total .Covered}}
+    <tr class="{{if .Absent}}absent{{end}}">
+     <th scope="row">{{.Block.Name}}</th>
+     <td class="fbar">{{.Chart}}</td>
+     <td class="fnum">{{.Covered}}/{{.Total}}</td>
+    </tr>
+   {{end}}{{end}}
+   </tbody>
+  </table>
+  <div class="sactions"><a class="btn" href="{{.DetailURL}}">Ver encuadre</a></div>
+ </li>
+{{end}}
+</ol>
+{{end}}

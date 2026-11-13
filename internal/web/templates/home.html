@@ -1,5 +1,7 @@
+{{define "head"}}<link rel="stylesheet" href="/static/digest.css?v=1">{{end}}
 {{define "content"}}
 <h1 class="sr">Portada</h1>
+{{if .DigestURL}}<p class="home-digest-wrap"><a class="home-digest" href="{{.DigestURL}}">{{.DigestLabel}} →</a></p>{{end}}
 {{template "home_cols" .}}
 {{end}}
 

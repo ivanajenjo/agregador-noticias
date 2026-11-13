@@ -13,6 +13,14 @@ const (
 	AnnoOpinion = "opinion" // label "sí" / "no"
 )
 
+// Closed vocabularies shared by the annotator and the UI.
+var (
+	AnnoTones   = []string{"neutral", "alarmista", "laudatorio", "crítico", "sensacionalista", "humorístico"}
+	AnnoIntents = []string{"informar", "opinar", "persuadir", "entretener", "promocionar"}
+	// AnnoFrames: generic news frames of Semetko & Valkenburg (2000).
+	AnnoFrames = []string{"conflicto", "interés humano", "económico", "moralidad", "responsabilidad", "otros"}
+)
+
 // AnnotationQuery restricts the aggregate/list queries of AnnotationReader.
 // Annotations with Score < MinScore are ignored (the model's own confidence).
 type AnnotationQuery struct {

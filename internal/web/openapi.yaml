@@ -1,0 +1,438 @@
+openapi: 3.1.0
+info:
+  title: Agregador de noticias API
+  version: "1.0"
+  description: |
+    API JSON del agregador. Todas las rutas (salvo /healthz y /readyz) exigen
+    HTTP Basic cuando hay credenciales configuradas. Los errores en /api/* tienen
+    la forma `{"error": "mensaje en español"}`. Los POST necesitan la cabecera
+    `X-Requested-With` (protección CSRF). Las respuestas no se cachean.
+servers:
+  - url: http://localhost:8080
+security:
+  - basicAuth: []
+tags:
+  - name: Noticias
+  - name: Tendencias
+  - name: Encuadre
+  - name: Trabajos
+  - name: Operación
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+  parameters:
+    source:
+      name: source
+      in: query
+      description: Id de medio; repetible.
+      schema: { type: array, items: { type: string } }
+      style: form
+      explode: true
+    leaning:
+      name: leaning
+      in: query
+      description: Etiqueta editorial; repetible.
+      schema: { type: array, items: { type: string } }
+      style: form
+      explode: true
+    from:
+      name: from
+      in: query
+      description: Fecha inicial AAAA-MM-DD (zona horaria configurada).
+      schema: { type: string, format: date }
+    to:
+      name: to
+      in: query
+      description: Fecha final AAAA-MM-DD, inclusive.
+      schema: { type: string, format: date }
+    ventana:
+      name: ventana
+      in: query
+      description: Ventana temporal.
+      schema: { type: string, enum: [6h, 24h, 48h, 7d] }
+  responses:
+    Error:
+      description: "Error. El cuerpo es {\"error\": \"...\"}."
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unavailable:
+      description: Funcionalidad no configurada o no disponible.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+    Article:
+      type: object
+      properties:
+        id: { type: integer }
+        source_id: { type: string }
+        source: { type: string }
+        leaning: { type: string }
+        title: { type: string }
+        url: { type: string }
+        summary: { type: string }
+        section: { type: string }
+        published: { type: string, format: date-time }
+    JobStarted:
+      type: object
+      properties:
+        status: { type: string, enum: [started, running, error] }
+        message: { type: string }
+    Object:
+      type: object
+      additionalProperties: true
+paths:
+  /api/articles:
+    get:
+      tags: [Noticias]
+      summary: Lista artículos recientes
+      parameters:
+        - $ref: "#/components/parameters/source"
+        - $ref: "#/components/parameters/leaning"
+        - $ref: "#/components/parameters/from"
+        - $ref: "#/components/parameters/to"
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 30 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 100000, default: 0 } }
+      responses:
+        "200":
+          description: Página de artículos.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: { type: integer }
+                  articles: { type: array, items: { $ref: "#/components/schemas/Article" } }
+        "500": { $ref: "#/components/responses/Error" }
+  /api/search:
+    get:
+      tags: [Noticias]
+      summary: Búsqueda híbrida (texto + vectores) o solo texto
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string, maxLength: 500 } }
+        - $ref: "#/components/parameters/source"
+        - $ref: "#/components/parameters/leaning"
+        - $ref: "#/components/parameters/from"
+        - $ref: "#/components/parameters/to"
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 10 } }
+      responses:
+        "200":
+          description: Resultados.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mode: { type: string, enum: [hybrid, text] }
+                  page: { type: integer }
+                  more: { type: boolean }
+                  hits:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: "#/components/schemas/Article"
+                        - type: object
+                          properties:
+                            score: { type: number }
+                            snippet: { type: string }
+        "400": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Unavailable" }
+  /api/screenshots:
+    get:
+      tags: [Noticias]
+      summary: Capturas de portada de un día
+      parameters:
+        - { name: date, in: query, schema: { type: string, format: date }, description: "Día; por defecto hoy." }
+        - { name: source, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Capturas.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  date: { type: string, format: date }
+                  screenshots:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        source_id: { type: string }
+                        taken_at: { type: string, format: date-time }
+                        url: { type: string }
+                        width: { type: integer }
+                        height: { type: integer }
+                        bytes: { type: integer }
+  /api/screenshots/{source}:
+    get:
+      tags: [Noticias]
+      summary: Línea temporal de capturas de un medio (para comparar)
+      parameters:
+        - { name: source, in: path, required: true, schema: { type: string } }
+        - { name: from, in: query, schema: { type: string }, description: AAAA-MM-DD o RFC3339. }
+        - { name: to, in: query, schema: { type: string }, description: AAAA-MM-DD o RFC3339. }
+      responses:
+        "200":
+          description: Capturas del medio.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Object" } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/trends:
+    get:
+      tags: [Tendencias]
+      summary: Términos en alza
+      parameters:
+        - $ref: "#/components/parameters/ventana"
+        - { name: limit, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: Términos con puntuación, medios y evolución.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Object" } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Unavailable" }
+  /api/trends/term:
+    get:
+      tags: [Tendencias]
+      summary: Evolución diaria de un término
+      parameters:
+        - { name: key, in: query, required: true, schema: { type: string } }
+        - { name: dias, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: Serie por día y bloque editorial.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Object" } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Unavailable" }
+  /api/stories:
+    get:
+      tags: [Tendencias]
+      summary: Historias que cubren varios medios
+      parameters:
+        - $ref: "#/components/parameters/ventana"
+        - { name: limit, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: Historias con cobertura y huecos por medio.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Object" } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Unavailable" }
+  /api/framing/{storyID}:
+    get:
+      tags: [Encuadre]
+      summary: Encuadre de una historia por bloque editorial (estimación)
+      parameters:
+        - { name: storyID, in: path, required: true, schema: { type: string } }
+        - $ref: "#/components/parameters/ventana"
+        - { name: bloques, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Términos distintivos y titulares por bloque.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Object" } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Unavailable" }
+  /api/blindspots:
+    get:
+      tags: [Encuadre]
+      summary: Puntos ciegos de cobertura
+      parameters:
+        - $ref: "#/components/parameters/ventana"
+        - { name: bloques, in: query, schema: { type: string } }
+        - { name: todas, in: query, schema: { type: string, enum: ["1"] } }
+      responses:
+        "200":
+          description: Historias que un bloque editorial no cubre.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Object" } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Unavailable" }
+  /api/revisions:
+    get:
+      tags: [Noticias]
+      summary: Cambios de titular o resumen detectados
+      parameters:
+        - { name: ventana, in: query, schema: { type: string, enum: [24h, 7d, 30d] } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 30 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: Revisiones.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: { type: integer }
+                  revisions: { type: array, items: { $ref: "#/components/schemas/Object" } }
+        "400": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Unavailable" }
+  /api/digest:
+    get:
+      tags: [Noticias]
+      summary: Resumen diario
+      parameters:
+        - { name: day, in: query, schema: { type: string, format: date }, description: "Por defecto el último." }
+      responses:
+        "200":
+          description: Resumen.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Object" } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Unavailable" }
+  /api/annotations/summary:
+    get:
+      tags: [Encuadre]
+      summary: Distribución de etiquetas de anotación (tono, intención...; estimaciones de un modelo)
+      parameters:
+        - { name: modelo, in: query, schema: { type: string }, description: Modelo; por defecto el más reciente. }
+        - { name: dias, in: query, schema: { type: integer, enum: [7, 30] } }
+        - { name: conf, in: query, schema: { type: number }, description: Confianza mínima. }
+      responses:
+        "200":
+          description: Resumen por dimensión, bloque editorial y medio.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Object" } } }
+        "503": { $ref: "#/components/responses/Unavailable" }
+  /api/ask:
+    post:
+      tags: [Noticias]
+      summary: Pregunta con respuesta en streaming (Server-Sent Events)
+      description: |
+        Responde `text/event-stream` con eventos `sources` (JSON con las fuentes),
+        `delta` (fragmentos de texto), `error` y `done`. Usa `curl -N`.
+        Cuerpo máximo 32 KiB; pregunta máxima 2000 caracteres.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question]
+              properties:
+                question: { type: string, maxLength: 2000 }
+                compare: { type: boolean }
+                sources: { type: array, items: { type: string } }
+                leanings: { type: array, items: { type: string } }
+                from: { type: string, format: date }
+                to: { type: string, format: date }
+                k: { type: integer, minimum: 1, maximum: 20, default: 8 }
+      responses:
+        "200":
+          description: Flujo SSE.
+          content:
+            text/event-stream:
+              schema: { type: string }
+        "400": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Unavailable" }
+  /api/jobs/ingest:
+    post:
+      tags: [Trabajos]
+      summary: Lanza una ingesta ahora (asíncrono; queda en job_runs)
+      responses:
+        "202": { description: Iniciada, content: { application/json: { schema: { $ref: "#/components/schemas/JobStarted" } } } }
+        "409": { description: Ya hay una ejecución en curso, content: { application/json: { schema: { $ref: "#/components/schemas/JobStarted" } } } }
+        "503": { $ref: "#/components/responses/Unavailable" }
+  /api/jobs/screenshots:
+    post:
+      tags: [Trabajos]
+      summary: Lanza las capturas ahora (asíncrono; queda en job_runs)
+      responses:
+        "202": { description: Iniciada, content: { application/json: { schema: { $ref: "#/components/schemas/JobStarted" } } } }
+        "409": { description: Ya hay una ejecución en curso, content: { application/json: { schema: { $ref: "#/components/schemas/JobStarted" } } } }
+        "503": { $ref: "#/components/responses/Unavailable" }
+  /api/jobs/maintenance:
+    post:
+      tags: [Trabajos]
+      summary: Ejecuta ahora la retención y el mantenimiento de SQLite
+      responses:
+        "202": { description: Iniciada, content: { application/json: { schema: { $ref: "#/components/schemas/JobStarted" } } } }
+        "409": { description: Ya hay una ejecución en curso, content: { application/json: { schema: { $ref: "#/components/schemas/JobStarted" } } } }
+        "503": { $ref: "#/components/responses/Unavailable" }
+  /api/jobs/digest:
+    post:
+      tags: [Trabajos]
+      summary: Genera el resumen diario ahora
+      parameters:
+        - { name: day, in: query, schema: { type: string, format: date } }
+      responses:
+        "202": { description: Iniciada, content: { application/json: { schema: { $ref: "#/components/schemas/JobStarted" } } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { description: Ya hay una ejecución en curso, content: { application/json: { schema: { $ref: "#/components/schemas/JobStarted" } } } }
+        "503": { $ref: "#/components/responses/Unavailable" }
+  /api/maintenance:
+    get:
+      tags: [Operación]
+      summary: Simulación de la retención (cuántos artículos se borrarían)
+      responses:
+        "200":
+          description: Previsión.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  articles_days: { type: integer }
+                  enabled: { type: boolean }
+                  cutoff: { type: string, format: date-time }
+                  would_delete: { type: integer }
+        "503": { $ref: "#/components/responses/Unavailable" }
+  /api/status:
+    get:
+      tags: [Operación]
+      summary: Estado de feeds, trabajos, LLM y almacenamiento
+      responses:
+        "200":
+          description: Estado.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Object" } } }
+  /api/export/articles.ndjson:
+    get:
+      tags: [Operación]
+      summary: Exporta artículos (solo metadatos) en NDJSON por streaming
+      description: |
+        Una línea JSON por artículo con title, url, source, published y summary.
+        Máximo 200000 líneas; una exportación a la vez (429 si hay otra).
+      parameters:
+        - $ref: "#/components/parameters/source"
+        - $ref: "#/components/parameters/leaning"
+        - $ref: "#/components/parameters/from"
+        - $ref: "#/components/parameters/to"
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200000 } }
+      responses:
+        "200":
+          description: NDJSON.
+          content:
+            application/x-ndjson:
+              schema:
+                type: object
+                properties:
+                  title: { type: string }
+                  url: { type: string }
+                  source: { type: string }
+                  published: { type: string, format: date-time }
+                  summary: { type: string }
+        "429": { $ref: "#/components/responses/Error" }
+  /api/openapi.yaml:
+    get:
+      tags: [Operación]
+      summary: Esta especificación
+      responses:
+        "200":
+          description: OpenAPI 3.1 en YAML.
+          content: { application/yaml: { schema: { type: string } } }
+  /api/docs:
+    get:
+      tags: [Operación]
+      summary: Visor HTML de esta especificación (sin dependencias externas)
+      responses:
+        "200":
+          description: Página HTML.
+          content: { text/html: { schema: { type: string } } }

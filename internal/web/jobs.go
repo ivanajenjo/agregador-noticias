@@ -62,21 +62,70 @@ func (t *jobTracker) snapshot() jobSnapshot {
 
 const jobTimeout = 2 * time.Hour
 
-// apiJob starts a job asynchronously: 202 on start, 409 when already running,
-// 503 when the collaborator is not configured.
-func (s *server) apiJob(name string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var run func(context.Context) (int, error)
-		switch name {
-		case "ingest":
-			if s.d.Ingestor != nil {
-				run = s.d.Ingestor.RunOnce
-			}
-		case "screenshots":
-			if s.d.Shots != nil {
-				run = s.d.Shots.RunOnce
+// jobFunc runs a job and returns a human message plus a count.
+type jobFunc func(ctx context.Context) (msg string, n int, err error)
+
+func (s *server) jobRunner(name string) jobFunc {
+	switch name {
+	case "ingest":
+		if s.d.Ingestor != nil {
+			return func(ctx context.Context) (string, int, error) {
+				n, err := s.d.Ingestor.RunOnce(ctx)
+				return fmt.Sprintf("%d nuevas", n), n, err
 			}
 		}
+	case "screenshots":
+		if s.d.Shots != nil {
+			return func(ctx context.Context) (string, int, error) {
+				n, err := s.d.Shots.RunOnce(ctx)
+				return fmt.Sprintf("%d capturas", n), n, err
+			}
+		}
+	case "maintenance":
+		if s.d.Maintenance != nil {
+			return func(ctx context.Context) (string, int, error) {
+				msg, err := s.d.Maintenance.RunOnce(ctx)
+				return msg, 0, err
+			}
+		}
+	}
+	return nil
+}
+
+// recordJobStart writes the job_runs row like the scheduler does. A store that
+// cannot record (error or panic) must never prevent the job from running.
+func (s *server) recordJobStart(name string) (id int64) {
+	defer func() {
+		if v := recover(); v != nil {
+			id = 0
+		}
+	}()
+	id, err := s.d.Store.StartJob(context.Background(), name)
+	if err != nil {
+		s.log.Warn("job row start", "job", name, "err", err)
+		return 0
+	}
+	return id
+}
+
+func (s *server) recordJobFinish(id int64, ok bool, msg string) {
+	if id == 0 {
+		return
+	}
+	defer func() { _ = recover() }()
+	// fresh context so the record survives the job's own timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := s.d.Store.FinishJob(ctx, id, ok, msg); err != nil {
+		s.log.Warn("job row finish", "id", id, "err", err)
+	}
+}
+
+// apiJob starts a job asynchronously: 202 on start, 409 when already running,
+// 503 when the collaborator is not configured. Runs are recorded in job_runs.
+func (s *server) apiJob(name string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		run := s.jobRunner(name)
 		if run == nil {
 			s.jobReply(w, r, http.StatusServiceUnavailable, "Tarea no disponible")
 			return
@@ -89,22 +138,25 @@ func (s *server) apiJob(name string) http.HandlerFunc {
 			ctx, cancel := context.WithTimeout(context.Background(), jobTimeout)
 			defer cancel()
 			res := jobResult{At: s.now()}
+			rowID := s.recordJobStart(name)
 			defer func() {
 				if v := recover(); v != nil {
 					res.OK, res.Message = false, fmt.Sprint("panic: ", v)
 					s.log.Error("job panic", "job", name, "panic", v)
 				}
+				s.recordJobFinish(rowID, res.OK, res.Message)
 				s.jobs.finish(name, res)
 			}()
-			n, err := run(ctx)
+			msg, n, err := run(ctx)
 			res.Count = n
+			res.Message = msg
 			if err != nil {
-				res.Message = err.Error()
+				res.Message = fmt.Sprintf("%s: %v", msg, err)
 				s.log.Error("job failed", "job", name, "err", err)
 				return
 			}
 			res.OK = true
-			s.log.Info("job finished", "job", name, "count", n)
+			s.log.Info("job finished", "job", name, "result", msg)
 		}()
 		s.jobReply(w, r, http.StatusAccepted, "Tarea iniciada")
 	}
@@ -128,4 +180,10 @@ func (s *server) jobReply(w http.ResponseWriter, r *http.Request, code int, msg 
 		status = "error"
 	}
 	writeJSON(w, code, map[string]string{"status": status, "message": msg})
+}
+
+func init() {
+	registerRoutes(func(s *server, m *http.ServeMux) {
+		m.HandleFunc("POST /api/jobs/maintenance", s.apiJob("maintenance"))
+	})
 }

@@ -143,6 +143,8 @@ type homeView struct {
 	Cols    []homeCol
 	Updated time.Time
 	Err     string
+	// Digest teaser (empty when no digest exists).
+	DigestLabel, DigestURL string
 }
 
 const homePerSource = 8
@@ -167,7 +169,9 @@ func (s *server) buildHome(ctx context.Context) homeView {
 }
 
 func (s *server) pageHome(w http.ResponseWriter, r *http.Request) {
-	s.render(w, r, 200, "home", "Portada", "home", s.buildHome(r.Context()))
+	v := s.buildHome(r.Context())
+	v.DigestLabel, v.DigestURL = s.digestHomeLink(r.Context())
+	s.render(w, r, 200, "home", "Portada", "home", v)
 }
 
 func (s *server) fragHome(w http.ResponseWriter, r *http.Request) {
@@ -519,6 +523,7 @@ type articleView struct {
 	Source  domain.Source
 	Paras   []string
 	Related []hitView
+	Revs    []revCard // historial de cambios (vacío si no hay)
 }
 
 func isNotFound(err error) bool {
@@ -551,6 +556,7 @@ func (s *server) pageArticle(w http.ResponseWriter, r *http.Request) {
 	if v.Source.Name == "" {
 		v.Source.Name = a.SourceID
 	}
+	v.Revs = s.articleRevisions(ctx, a.ID, v.Source.Name)
 	if s.d.Retriever != nil && strings.TrimSpace(a.Title) != "" {
 		if hits, _, err := s.d.Retriever.Search(ctx, truncRunes(a.Title, maxQueryRunes), domain.Filter{}, 9); err == nil {
 			for _, h := range hits {

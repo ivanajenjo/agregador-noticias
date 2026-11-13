@@ -5,11 +5,13 @@
   {{if not (isZero .A.PublishedAt)}}<time datetime="{{datetime .A.PublishedAt}}">{{fulltime .A.PublishedAt}}</time>{{end}}
   {{if .A.Author}}<span>· {{.A.Author}}</span>{{end}}</p>
  <h1>{{.A.Title}}</h1>
+ <div id="anno" hx-get="/fragmentos/anotaciones/{{.A.ID}}" hx-trigger="load" hx-swap="outerHTML"></div>
  <p><a class="btn" href="{{.A.URL}}" target="_blank" rel="noopener noreferrer">Leer en {{.Source.Name}} ↗</a></p>
  {{if .A.Summary}}{{if .A.Content}}<p class="lead">{{.A.Summary}}</p>{{end}}{{end}}
  <div class="body">{{range .Paras}}<p>{{.}}</p>{{else}}<p class="empty">Sin texto guardado.</p>{{end}}</div>
  <p class="muted small">Visto por primera vez {{ago .A.FirstSeenAt}}.</p>
 </article>
+{{template "rev_history" .Revs}}
 {{if .Related}}
 <section class="related" aria-labelledby="h-rel">
  <h2 id="h-rel">Artículos relacionados</h2>
@@ -21,5 +23,25 @@
  {{end}}
  </ol>
 </section>
+{{end}}
+{{end}}
+
+{{define "rev_history"}}
+{{if .}}
+<link rel="stylesheet" href="/static/revisions.css">
+<details class="revhist">
+ <summary>Historial de cambios <span class="count">{{len .}}</span></summary>
+ <ol class="revs compact">
+ {{range .}}
+  <li class="rev">
+   <div class="meta rhead"><span class="badge mode-t">{{.KindLabel}}</span> <time datetime="{{datetime .ChangedAt}}">{{fulltime .ChangedAt}}</time> <span>· {{.Delay}} después de publicarse</span></div>
+   <div class="rpair">
+    <div class="rside before"><span class="rlbl">Antes</span><p class="rtxt">{{.Before}}</p></div>
+    <div class="rside after"><span class="rlbl">Después</span><p class="rtxt">{{.After}}</p></div>
+   </div>
+  </li>
+ {{end}}
+ </ol>
+</details>
 {{end}}
 {{end}}

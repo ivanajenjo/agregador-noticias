@@ -48,15 +48,16 @@ import (
 //
 // where age is measured from the latest article of the cluster.
 const (
-	storyMaxSize     = 120
-	storyGap         = 36 * time.Hour
-	storySpan        = 72 * time.Hour
+	storyMaxSize     = 40 // an event, not a topic: bigger clusters are split
+	storyGap         = 24 * time.Hour
+	storySpan        = 36 * time.Hour
 	storyMinIDF      = 1.2
 	storyHalfLife    = 12 * time.Hour
 	storyTopTerms    = 4
-	storyMaxDFFloor  = 40
-	storyMaxDFFrac   = 0.12
-	storyMaxDFAbs    = 400
+	storyMaxDFFloor  = 25
+	storyMaxDFFrac   = 0.04
+	storyMaxDFAbs    = 120
+	storyMinShared   = 2 // distinct specific terms two articles must share to be linked
 	storyFullLift    = 3.0  // window/baseline rate ratio at which a term gets full weight
 	storyMinBurst    = 0.15 // weight floor for background terms
 	storyEvidence    = 0.9  // E = storyEvidence * ln(N+1)
@@ -183,6 +184,7 @@ func (e *Engine) computeStories(ctx context.Context, o domain.TrendOptions) (*st
 		of[i] = -1
 	}
 	ev := make([]float64, nWin)
+	shared := make([]int8, nWin)
 	var touched []int32
 	typical := func(v *svec, cl *cluster) bool {
 		s := 0.0
@@ -231,6 +233,9 @@ func (e *Engine) computeStories(ctx context.Context, o domain.TrendOptions) (*st
 					touched = append(touched, int32(j))
 				}
 				ev[j] += float64(v.w[k])
+				if shared[j] < 127 {
+					shared[j]++
+				}
 			}
 		}
 		// best evidence per cluster
@@ -240,7 +245,7 @@ func (e *Engine) computeStories(ctx context.Context, o domain.TrendOptions) (*st
 		}
 		var links []link
 		for _, j := range touched {
-			if e := ev[j]; e >= E && of[j] >= 0 {
+			if e := ev[j]; e >= E && shared[j] >= storyMinShared && of[j] >= 0 {
 				found := false
 				for k := range links {
 					if links[k].cid == of[j] {
@@ -256,6 +261,7 @@ func (e *Engine) computeStories(ctx context.Context, o domain.TrendOptions) (*st
 				}
 			}
 			ev[j] = 0
+			shared[j] = 0
 		}
 		sort.Slice(links, func(a, b int) bool {
 			if links[a].ev != links[b].ev {

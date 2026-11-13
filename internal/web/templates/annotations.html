@@ -1,0 +1,62 @@
+{{define "head"}}<link rel="stylesheet" href="/static/annotations.css">
+<script src="/static/annotations.js" defer></script>{{end}}
+
+{{define "content"}}
+<h1>Tono, intención y encuadre</h1>
+<p class="lead-sm">Cómo describe un modelo de lenguaje pequeño los titulares de cada medio y línea editorial.</p>
+<aside class="notice warn caveat" role="note">
+ <strong>Léelo con cautela.</strong> Son <em>estimaciones automáticas</em> de un modelo pequeño: se equivoca, depende de cómo esté redactado el titular y no ve el contexto. Las líneas editoriales son etiquetas editables, no una verdad objetiva. Con pocas noticias las barras no son concluyentes: fíjate en el número <em>n</em>.
+</aside>
+{{if .Empty}}
+ <p class="empty">{{if .Enabled}}Todavía no hay noticias anotadas. El trabajador de anotaciones procesa primero las más recientes y solo funciona cuando el servidor del modelo está encendido; vuelve en unos minutos.{{else}}No hay anotaciones guardadas.{{end}}</p>
+{{else}}
+<form class="abar" method="get" action="/anotaciones" id="annoform">
+ <nav class="seg" aria-label="Ventana de tiempo"><span class="muted small">Últimos</span>
+  {{range .Windows}}<a class="chip sm{{if .On}} on{{end}}" href="{{.URL}}"{{if .On}} aria-current="true"{{end}}>{{.Label}}</a>{{end}}
+ </nav>
+ <input type="hidden" name="dias" value="{{.Days}}">
+ {{if .Models}}{{if gt (len .Models) 1}}
+ <label class="fld small">Modelo <select name="modelo">{{range .Models}}<option value="{{.Name}}"{{if .On}} selected{{end}}>{{.Name}} ({{.Count}})</option>{{end}}</select></label>
+ {{else}}<input type="hidden" name="modelo" value="{{.Model}}">{{end}}{{end}}
+ <label class="fld small conf">Confianza mínima <output id="confout" for="conf">{{.Conf}} %</output>
+  <input type="range" id="conf" min="0" max="95" step="5" value="{{.Conf}}"></label>
+ <input type="hidden" name="conf" id="confval" value="{{.ConfVal}}">
+ <button type="submit" class="btn ghost">Aplicar</button>
+</form>
+{{if .Err}}<p class="notice err" role="alert">{{.Err}}</p>{{else}}
+<p class="muted small summary">Modelo <strong>{{.Model}}</strong> · {{.Annotated}} de {{.Articles}} artículos de los últimos {{.Days}} días con confianza ≥ {{.Conf}} % ({{.Coverage}} %).</p>
+{{range .Dims}}
+<section class="adim" aria-labelledby="h-{{.Kind}}">
+ <h2 id="h-{{.Kind}}">{{.Title}}</h2>
+ <ul class="alegend" aria-label="Leyenda de {{.Title}}">{{range .Legend}}<li><span class="sw {{.Class}}"></span>{{.Label}}{{if .N}} <span class="muted">{{.N}}</span>{{end}}</li>{{end}}</ul>
+ {{if not .Total}}<p class="muted">Sin anotaciones con esta confianza en la ventana.</p>{{else}}
+ <h3>Por línea editorial</h3>
+ {{template "anno_bars" .Leanings}}
+ <h3>Por medio</h3>
+ {{template "anno_bars" .Outlets}}
+ {{end}}
+</section>
+{{end}}
+{{end}}
+{{end}}
+{{end}}
+
+{{define "anno_bars"}}
+<ul class="abars">
+{{range .}}
+ <li class="arow{{if .Small}} low{{end}}">
+  <div class="aname"><strong>{{.Name}}</strong>{{if .Leaning}} <span class="badge {{leanClass .Leaning}}">{{.Leaning}}</span>{{end}}
+   <span class="an">n = {{.N}}</span>{{if .Small}} <span class="badge small-n">muestra pequeña</span>{{end}}</div>
+  <div class="abar-bar" role="img" aria-label="{{.Alt}}">{{range .Segs}}<a class="aseg {{.Class}}" style="flex:{{printf "%.2f" .Pct}} 1 0" href="{{.Href}}" title="{{.Label}}: {{.N}} ({{printf "%.0f" .Pct}} %). Ver artículos">{{if ge .Pct 14.0}}<span>{{printf "%.0f" .Pct}}%</span>{{end}}</a>{{end}}</div>
+ </li>
+{{end}}
+</ul>
+{{end}}
+
+{{define "anno_chips"}}
+<link rel="stylesheet" href="/static/annotations.css">
+<div class="achips" id="anno">
+ <ul>{{range .Chips}}<li><span class="achip{{if .Low}} lowc{{end}}" tabindex="0" title="{{.Tip}}"><span class="k">{{.Name}}:</span> {{.Label}}</span></li>{{end}}</ul>
+ <span class="muted small aauto">estimación automática · {{.Model}}</span>
+</div>
+{{end}}

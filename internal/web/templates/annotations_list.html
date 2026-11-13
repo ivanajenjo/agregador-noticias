@@ -1,0 +1,16 @@
+{{define "head"}}<link rel="stylesheet" href="/static/annotations.css">{{end}}
+{{define "content"}}
+<p class="back"><a href="{{.Back}}">← Volver a Tono</a></p>
+<h1>{{.Title}}</h1>
+<p class="muted small">Artículos que el modelo <strong>{{.Model}}</strong> etiquetó así con confianza ≥ {{.Conf}} %. Estimación automática: puede ser errónea.</p>
+{{if not .Items}}<p class="empty">No hay artículos con esta etiqueta en la ventana.</p>{{else}}
+<ol class="results">
+{{range .Items}}
+ <li class="result"><a class="atitle" href="/articulo/{{.A.ID}}">{{.A.Title}}</a>
+  <div class="meta"><span class="badge {{leanClass .Lean}}">{{.Source}}</span>
+  {{if not (isZero .A.PublishedAt)}}<time datetime="{{datetime .A.PublishedAt}}">{{ago .A.PublishedAt}}</time>{{end}}
+  <span class="muted small">confianza {{.Score}} %</span></div></li>
+{{end}}
+</ol>
+{{end}}
+{{end}}

@@ -41,6 +41,12 @@ type Options struct {
 	ExtraFlags  []string // extra Chrome flags, "--name" or "--name=value"
 	// NoSandbox adds --no-sandbox. nil => automatic (root or inside a container).
 	NoSandbox *bool
+	// Prominence receives the front-page headlines detected during each
+	// capture. nil => the store passed to New is used when it implements
+	// domain.ProminenceStore (otherwise nothing is extracted).
+	Prominence domain.ProminenceStore
+	// NoFrontItems disables the headline extraction.
+	NoFrontItems bool
 }
 
 // Taker implements domain.ShotTaker.
@@ -228,6 +234,17 @@ func (t *Taker) captureSource(ctx, browserCtx context.Context, s domain.Source) 
 	t.hideOverlays(tctx)
 	t.scrollThrough(tctx)
 
+	// Headlines are read from the same DOM state the screenshot shows
+	// (overlays hidden, lazy content loaded). Failure never blocks the capture.
+	var items []domain.FrontItem
+	if ps := t.prominenceStore(); ps != nil {
+		var xerr error
+		if items, xerr = t.extractFrontItems(tctx, s.Homepage); xerr != nil {
+			t.log.Warn("front-page extraction failed (screenshot kept)", "source", s.ID, "err", xerr)
+			items = nil
+		}
+	}
+
 	buf, w, h, err := t.capture(tctx)
 	if err != nil {
 		return fmt.Errorf("capture: %w", err)
@@ -235,7 +252,30 @@ func (t *Taker) captureSource(ctx, browserCtx context.Context, s domain.Source) 
 	if len(buf) == 0 {
 		return errors.New("empty screenshot")
 	}
-	return t.store(ctx, s, buf, w, h)
+	id, err := t.store(ctx, s, buf, w, h)
+	if err != nil {
+		return err
+	}
+	if ps := t.prominenceStore(); ps != nil && len(items) > 0 && id > 0 {
+		if err := ps.SaveFrontItems(ctx, id, items); err != nil {
+			t.log.Warn("saving front-page items failed", "source", s.ID, "err", err)
+		} else {
+			t.log.Info("front-page items saved", "source", s.ID, "n", len(items), "top", items[0].Title)
+		}
+	}
+	return nil
+}
+
+// prominenceStore returns where front-page items go, or nil when disabled.
+func (t *Taker) prominenceStore() domain.ProminenceStore {
+	if t.opts.NoFrontItems {
+		return nil
+	}
+	if t.opts.Prominence != nil {
+		return t.opts.Prominence
+	}
+	ps, _ := t.st.(domain.ProminenceStore)
+	return ps
 }
 
 // capture takes a JPEG of the full content (capped by MaxHeight).
@@ -271,22 +311,20 @@ func (t *Taker) capture(ctx context.Context) (buf []byte, w, h int, err error) {
 	return r.Data, w, h, nil
 }
 
-func (t *Taker) store(ctx context.Context, s domain.Source, data []byte, w, h int) error {
+func (t *Taker) store(ctx context.Context, s domain.Source, data []byte, w, h int) (int64, error) {
 	now := t.opts.Now().Local()
 	rel := fmt.Sprintf("%s/%04d/%02d/%02d/%02d%02d.jpg", s.ID, now.Year(), int(now.Month()), now.Day(), now.Hour(), now.Minute())
 	full := filepath.Join(t.opts.Dir, filepath.FromSlash(rel))
 	if err := writeAtomic(full, data); err != nil {
-		return err
+		return 0, err
 	}
-	err := t.st.SaveScreenshot(ctx, &domain.Screenshot{
-		SourceID: s.ID, TakenAt: now, Path: rel, Width: w, Height: h, Bytes: int64(len(data)),
-	})
-	if err != nil {
+	sh := &domain.Screenshot{SourceID: s.ID, TakenAt: now, Path: rel, Width: w, Height: h, Bytes: int64(len(data))}
+	if err := t.st.SaveScreenshot(ctx, sh); err != nil {
 		_ = os.Remove(full)
-		return fmt.Errorf("save record: %w", err)
+		return 0, fmt.Errorf("save record: %w", err)
 	}
 	t.log.Info("screenshot saved", "source", s.ID, "path", rel, "bytes", len(data), "h", h)
-	return nil
+	return sh.ID, nil
 }
 
 func writeAtomic(path string, data []byte) error {

@@ -18,7 +18,7 @@ import (
 // resolves the a/b selection; it never decodes images.
 
 const (
-	cmpDefaultDays = 7
+	cmpDefaultDays = 8
 	cmpMaxDays     = 92
 	cmpMaxFrames   = 400
 	cmpAPIMax      = 1000
@@ -381,7 +381,7 @@ func (s *server) cmpPresets(frames []cmpFrame, bi int, v cmpView) []cmpPreset {
 		if d.t.After(bt) {
 			continue
 		}
-		i := nearestIdx(frames, d.t.Unix())
+		i := nearestIdx(frames[:bi], d.t.Unix()) // only captures before b
 		if i < 0 || i == bi || frames[i].T >= b.T || seen[frames[i].ID] {
 			continue
 		}

@@ -25,7 +25,7 @@
  {{range .Rows}}
   <article class="shotcard">
    {{$src := .Source}}
-   <h2>{{.Source.Name}} {{if .Source.Leaning}}<span class="badge {{leanClass .Source.Leaning}}">{{.Source.Leaning}}</span>{{end}}</h2>
+   <h2><a href="/capturas/{{.Source.ID}}" title="Comparar y timelapse">{{.Source.Name}}</a> {{if .Source.Leaning}}<span class="badge {{leanClass .Source.Leaning}}">{{.Source.Leaning}}</span>{{end}}</h2>
    {{if .Latest}}
     <a class="thumb" href="{{.Latest.URL}}" data-viewer="grid" data-title="{{.Source.Name}} · {{.Latest.Time}}"><img loading="lazy" decoding="async" src="{{.Latest.URL}}" alt="Portada de {{.Source.Name}} a las {{.Latest.Time}}"></a>
     <ul class="timeline" aria-label="Línea temporal de {{.Source.Name}}">

@@ -1,0 +1,63 @@
+{{define "head"}}<link rel="stylesheet" href="/static/framing.css?v={{.Version}}">
+{{end}}
+{{define "content"}}
+<p class="back"><a href="{{.Back}}">← Encuadre</a></p>
+<h1>{{.Story.Title}}</h1>
+<div class="meta sbadges"><span class="badge">{{.Story.Sources}} medios</span><span class="badge">{{.Story.Articles}} artículos</span>
+ {{if not (isZero .Story.FirstAt)}}<span>desde <time datetime="{{datetime .Story.FirstAt}}">{{ago .Story.FirstAt}}</time></span>{{end}}</div>
+<div class="lean fl">{{.Bar}}<div class="cap muted small">{{leanCap .Story.Leanings}}</div></div>
+<p class="sactions"><a class="btn" href="{{.CompareURL}}">Pedir al modelo que contraste el enfoque</a></p>
+
+<section aria-labelledby="h-cob">
+ <h2 id="h-cob">Cobertura por bloque</h2>
+ {{if .Cov.Summary}}<p class="fsum">{{.Cov.Summary}}.</p>{{end}}
+ {{if .Cov.Statement}}<p class="fstate">{{.Cov.Statement}}</p>{{end}}
+ <table class="fmatrix wide">
+  <caption class="sr">Medios que han cubierto la historia y medios en los que no se ha detectado</caption>
+  <tbody>
+  {{range .Cov.Rows}}{{if or .Total .Covered}}
+   <tr class="{{if .Absent}}absent{{end}}">
+    <th scope="row">{{.Block.Name}}</th>
+    <td class="fbar">{{.Chart}}</td>
+    <td class="fnum">{{.Covered}}/{{.Total}}</td>
+    <td class="fnames small"><span>{{if .Names}}{{.Names}}{{else}}—{{end}}</span>{{if .Missing}}<span class="muted"> · no detectada en: {{range $i, $n := .Missing}}{{if $i}}, {{end}}{{$n}}{{end}}</span>{{end}}</td>
+   </tr>
+  {{end}}{{end}}
+  </tbody>
+ </table>
+</section>
+
+<section aria-labelledby="h-head">
+ <h2 id="h-head">Titulares comparados</h2>
+ <p class="muted small">Las palabras en tono neutro las usa la mayoría de los medios; <mark class="w uniq">resaltadas</mark> las que solo usa ese medio; <span class="w some">subrayadas</span> las que comparte una minoría. Titular de referencia: <em>{{.Consensus}}</em></p>
+ <table class="rtable fheads">
+  <thead><tr><th>Medio</th><th>Titular</th></tr></thead>
+  <tbody>
+  {{range .Rows}}
+   <tr>
+    <td data-label="Medio"><span class="v"><strong>{{.Name}}</strong>{{if .Leaning}} <span class="badge {{leanClass .Leaning}}">{{.Leaning}}</span>{{end}}</span></td>
+    <td class="fh"><a class="hl2" href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{range .Words}}<span class="w {{.Class}}">{{.Text}}</span> {{end}}</a>
+     {{if .OmittedTxt}}<div class="muted small">No usa: {{.OmittedTxt}}</div>{{end}}
+     {{if .More}}<div class="muted small">y {{.More}} titulares más del medio</div>{{end}}</td>
+   </tr>
+  {{end}}
+  </tbody>
+ </table>
+</section>
+
+<section aria-labelledby="h-voc">
+ <h2 id="h-voc">Vocabulario distintivo por bloque</h2>
+ {{if .Note}}<p class="muted">{{.Note}}</p>{{end}}
+ <div class="fvoc">
+ {{range .Terms}}
+  <div class="fblock">
+   <h3><i class="sw {{.Class}}"></i>{{.Block.Name}} <span class="muted small">{{.Articles}} artículos · {{.Outlets}} medios</span></h3>
+   {{if .Terms}}<ul class="fchips">{{range .Terms}}<li class="fchip" title="z = {{printf "%.1f" .Z}} · {{.Count}} artículos de este bloque, {{.Other}} de los demás">{{.Text}} <span class="n">{{.Count}}</span></li>{{end}}</ul>
+   {{else}}<p class="muted small">{{if .Articles}}Sin palabras claramente distintivas.{{else}}Sin artículos de este bloque.{{end}}</p>{{end}}
+  </div>
+ {{end}}
+ </div>
+ <p class="muted small">Método: razón de log-odds con prior informativo (Monroe, Colaresi y Quinn, «Fightin' Words»), con z-score, sobre titulares y resúmenes frente a {{.Background}} artículos de la misma ventana. El número es en cuántos artículos del bloque aparece. Son diferencias de vocabulario, no una etiqueta de sesgo ni de intención.</p>
+</section>
+<p class="muted small">Calculado a las {{clock .Generated}}.</p>
+{{end}}

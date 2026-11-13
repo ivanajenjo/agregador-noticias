@@ -1,0 +1,80 @@
+{{define "head"}}<link rel="stylesheet" href="/static/follow.css">{{end}}
+{{define "content"}}
+<h1>Seguimientos</h1>
+<p class="lead-sm">Guarda temas con la misma sintaxis que el buscador y mira cómo los cubren los medios. Si hay un canal configurado, te avisamos cuando aparezcan novedades.</p>
+<div id="seg" aria-live="polite">{{template "seg" .}}</div>
+{{end}}
+
+{{define "seg"}}
+<div id="seg-in">
+{{if .Notice}}<p class="notice ok" role="status">{{.Notice}}</p>{{end}}
+{{if .Err}}<p class="notice err" role="alert">{{.Err}}</p>{{end}}
+
+<section aria-labelledby="h-new">
+ <h2 id="h-new">Nuevo seguimiento</h2>
+ <form class="wform" method="post" action="/seguimientos" hx-post="/seguimientos" hx-target="#seg-in" hx-swap="outerHTML">
+  <label class="fld">Qué seguir <input type="text" name="q" value="{{.Form.Query}}" maxlength="200" required placeholder="p. ej. ley de vivienda" autocomplete="off"></label>
+  <label class="fld">Nombre (opcional) <input type="text" name="name" value="{{.Form.Name}}" maxlength="80" placeholder="Vivienda"></label>
+  <details class="filters"{{if or .Form.Sources .Form.Leanings}} open{{end}}>
+   <summary>Limitar a medios o línea editorial</summary>
+   <div class="fgrid">
+    <fieldset><legend>Medios</legend>
+     {{range .Sources}}<label class="chk"><input type="checkbox" name="source" value="{{.ID}}"{{if .Checked}} checked{{end}}> <span>{{.Name}}</span></label>{{else}}<p class="muted">Sin medios configurados.</p>{{end}}
+    </fieldset>
+    <fieldset><legend>Línea editorial</legend>
+     {{range .Leanings}}<label class="chk"><input type="checkbox" name="leaning" value="{{.Name}}"{{if .Checked}} checked{{end}}> <span>{{.Name}}</span></label>{{end}}
+    </fieldset>
+   </div>
+  </details>
+  <label class="chk"><input type="checkbox" name="notify" value="1"{{if .Form.Notify}} checked{{end}}> <span>Avisarme de novedades</span></label>
+  <button type="submit">Guardar seguimiento</button>
+ </form>
+</section>
+
+<section aria-labelledby="h-list">
+ <h2 id="h-list">Tus seguimientos</h2>
+ {{range .Watches}}
+ <article class="watch">
+  <header class="whead">
+   <h3>{{.Name}}</h3>
+   <form method="post" action="/seguimientos/{{.ID}}/borrar" hx-post="/seguimientos/{{.ID}}/borrar" hx-target="#seg-in" hx-swap="outerHTML" hx-confirm="¿Borrar este seguimiento?">
+    <button type="submit" class="ghost" aria-label="Borrar seguimiento {{.Name}}">Borrar</button>
+   </form>
+  </header>
+  <p class="small muted">«{{.Query}}»{{if .Filters}} · {{.Filters}}{{end}} · {{if .Notify}}con avisos{{else}}sin avisos{{end}}</p>
+  {{if .Err}}<p class="notice err">{{.Err}}</p>{{else}}
+  <p class="wtotal"><strong>{{.Total}}{{if .Capped}}+{{end}}</strong> {{if eq .Total 1}}artículo{{else}}artículos{{end}} en los últimos 7 días</p>
+  {{if .Total}}
+  <div class="wgrid">
+   <div class="wchart">{{.Chart}}<span class="small muted">por día</span></div>
+   <ul class="wout">{{range .Outlets}}<li><span>{{.Name}}</span> <span class="badge">{{.Count}}</span></li>{{end}}</ul>
+  </div>
+  <ul class="wlatest">{{range .Latest}}<li><a href="/articulo/{{.ID}}">{{.Title}}</a> <span class="small muted">{{.Source}} · {{ago .When}}</span></li>{{end}}</ul>
+  {{else}}<p class="muted">Sin coincidencias esta semana.</p>{{end}}
+  {{end}}
+  <p class="sactions"><a class="btn" href="{{.CompareURL}}">Comparar enfoques</a><a class="btn ghost" href="{{.SearchURL}}">Ver en el buscador</a></p>
+ </article>
+ {{else}}<p class="muted">Aún no sigues ningún tema.</p>{{end}}
+</section>
+
+<section aria-labelledby="h-alerts">
+ <h2 id="h-alerts">Alertas enviadas</h2>
+ <p class="small muted">{{if .Channels}}Canales activos: {{range $i, $c := .Channels}}{{if $i}}, {{end}}{{$c}}{{end}}.{{else}}Sin canal configurado: las alertas solo se registran aquí.{{end}}</p>
+ {{if .CanTest}}<form method="post" action="/seguimientos/probar" hx-post="/seguimientos/probar" hx-target="#seg-in" hx-swap="outerHTML"><button type="submit" class="ghost">Probar notificación</button></form>{{end}}
+ {{if .Alerts}}
+ <table class="rtable alerts">
+  <thead><tr><th>Cuándo</th><th>Tipo</th><th>Aviso</th><th>Canal</th><th>Estado</th></tr></thead>
+  <tbody>
+  {{range .Alerts}}<tr>
+   <td data-label="Cuándo"><span class="v"><time datetime="{{datetime .SentAt}}">{{fulltime .SentAt}}</time></span></td>
+   <td data-label="Tipo"><span class="v">{{.KindLabel}}</span></td>
+   <td data-label="Aviso"><span class="v">{{.Title}}</span></td>
+   <td data-label="Canal"><span class="v">{{.Channel}}</span></td>
+   <td data-label="Estado"><span class="v st-{{.Class}}">{{.Status}}{{if and (not .OK) .Detail}}{{if ne .Channel "quiet"}}<br><span class="small muted">{{.Detail}}</span>{{end}}{{end}}</span></td>
+  </tr>{{end}}
+  </tbody>
+ </table>
+ {{else}}<p class="muted">Todavía no se ha enviado ninguna alerta.</p>{{end}}
+</section>
+</div>
+{{end}}
