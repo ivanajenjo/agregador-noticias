@@ -1,6 +1,6 @@
-{{define "head"}}<link rel="stylesheet" href="/static/shotscmp.css?v={{.Version}}">
-<script src="/static/shotscmp-logic.js?v={{.Version}}" defer></script>
-<script src="/static/shotscmp.js?v={{.Version}}" defer></script>{{end}}
+{{define "head"}}<link rel="stylesheet" href="{{asset "shotscmp.css"}}">
+<script src="{{asset "shotscmp-logic.js"}}" defer></script>
+<script src="{{asset "shotscmp.js"}}" defer></script>{{end}}
 {{define "content"}}
 <nav class="crumbs" aria-label="Ruta"><a href="{{.ShotsPageHref}}">Capturas</a> <span aria-hidden="true">›</span> <span>{{.Source.Name}}</span></nav>
 <h1>{{.Source.Name}} {{if .Source.Leaning}}<span class="badge {{leanClass .Source.Leaning}}">{{.Source.Leaning}}</span>{{end}}</h1>

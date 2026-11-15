@@ -14,12 +14,12 @@
 <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/static/icon-192.png">
-<link rel="stylesheet" href="/static/app.css?v={{.Version}}">
-<script src="/static/theme.js?v={{.Version}}"></script>
+<link rel="stylesheet" href="{{asset "app.css"}}">
+<script src="{{asset "theme.js"}}"></script>
 {{block "head" .V}}{{end}}
-<script src="/static/htmx.min.js?v=2.0.4" defer></script>
-<script src="/static/app.js?v={{.Version}}" defer></script>
-<script src="/static/frontpage.js?v={{.Version}}" defer></script>
+<script src="{{asset "htmx.min.js"}}" defer></script>
+<script src="{{asset "app.js"}}" defer></script>
+<script src="{{asset "frontpage.js"}}" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">Saltar al contenido</a>

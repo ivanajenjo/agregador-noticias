@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -254,6 +255,21 @@ func TestHomeContent(t *testing.T) {
 		if !strings.Contains(body, s) {
 			t.Errorf("missing %q", s)
 		}
+	}
+}
+
+// Static assets are cached for a week: their URLs must change with their content,
+// not with the build version (always "dev" when built on the Pi).
+func TestAssetURLsHashContent(t *testing.T) {
+	h, _, _, _ := newHandler(t, nil)
+	body := do(h, "GET", "/", nil, "").Body.String()
+	for _, f := range []string{"app.css", "app.js", "theme.js"} {
+		if !regexp.MustCompile(`/static/` + regexp.QuoteMeta(f) + `\?v=[0-9a-f]{16}"`).MatchString(body) {
+			t.Errorf("%s is not referenced with a content hash", f)
+		}
+	}
+	if strings.Contains(body, "?v=dev") {
+		t.Error("asset URL still uses the build version")
 	}
 }
 

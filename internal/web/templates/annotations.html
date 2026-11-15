@@ -1,5 +1,5 @@
-{{define "head"}}<link rel="stylesheet" href="/static/annotations.css">
-<script src="/static/annotations.js" defer></script>{{end}}
+{{define "head"}}<link rel="stylesheet" href="{{asset "annotations.css"}}">
+<script src="{{asset "annotations.js"}}" defer></script>{{end}}
 
 {{define "content"}}
 <h1>Tono, intención y encuadre</h1>
@@ -54,7 +54,7 @@
 {{end}}
 
 {{define "anno_chips"}}
-<link rel="stylesheet" href="/static/annotations.css">
+<link rel="stylesheet" href="{{asset "annotations.css"}}">
 <div class="achips" id="anno">
  <ul>{{range .Chips}}<li><span class="achip{{if .Low}} lowc{{end}}" tabindex="0" title="{{.Tip}}"><span class="k">{{.Name}}:</span> {{.Label}}</span></li>{{end}}</ul>
  <span class="muted small aauto">estimación automática · {{.Model}}</span>

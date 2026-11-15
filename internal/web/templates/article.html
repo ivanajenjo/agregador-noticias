@@ -28,7 +28,7 @@
 
 {{define "rev_history"}}
 {{if .}}
-<link rel="stylesheet" href="/static/revisions.css">
+<link rel="stylesheet" href="{{asset "revisions.css"}}">
 <details class="revhist">
  <summary>Historial de cambios <span class="count">{{len .}}</span></summary>
  <ol class="revs compact">

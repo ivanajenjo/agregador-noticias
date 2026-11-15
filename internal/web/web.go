@@ -87,8 +87,8 @@ func New(deps Deps, opts Options) http.Handler {
 	if s.o.Version == "" {
 		s.o.Version = "dev"
 	}
-	s.tpl = s.parseTemplates()
 	s.static = loadStatic()
+	s.tpl = s.parseTemplates()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.pageHome)

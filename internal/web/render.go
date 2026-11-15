@@ -48,6 +48,7 @@ func (s *server) parseTemplates() map[string]*template.Template {
 		"leanBar":   leanBarSVG,
 		"leanCap":   leanCaption,
 		"spark":     sparkSVG,
+		"asset":     s.assetURL,
 	}
 	out := map[string]*template.Template{}
 	for _, p := range pages {
@@ -55,6 +56,15 @@ func (s *server) parseTemplates() map[string]*template.Template {
 		out[p] = t
 	}
 	return out
+}
+
+// assetURL is the URL of a static file with its content hash as cache buster,
+// so a deploy invalidates the week-long browser cache even when Version is "dev".
+func (s *server) assetURL(name string) string {
+	if f, ok := s.static[name]; ok {
+		return "/static/" + name + "?v=" + strings.Trim(f.etag, `"`)
+	}
+	return "/static/" + name
 }
 
 // render executes the full page layout.
