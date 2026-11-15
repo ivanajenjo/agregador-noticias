@@ -59,9 +59,9 @@ deploy/pi-install.sh --install-docker        # añade --chromium, --shots o --ht
 
 El script es idempotente (puedes relanzarlo): instala Docker solo si falta (con tu confirmación o `--install-docker`), crea `.env`
 desde `.env.example` con **usuario `admin` y contraseña aleatoria** (la imprime; `--no-auth` lo evita), da a `./data` el propietario correcto,
-descarga la imagen, arranca y espera a que esté `healthy`. Al final imprime la URL.
+compila la imagen en la Pi (~5 min la primera vez, 1–2 GB de espacio temporal), arranca y espera a que esté `healthy`. Al final imprime la URL.
 
-Opciones: `--chromium` (imagen con navegador integrado), `--shots` (sidecar Chromium), `--https` (Caddy), `--build` (compila en la Pi en vez de descargar).
+Opciones: `--chromium` (imagen con navegador integrado), `--shots` (sidecar Chromium), `--https` (Caddy), `--pull` (descarga `AGREGADOR_IMAGE:AGREGADOR_TAG` de un registro en vez de compilar).
 
 ### Opción B: a mano
 
@@ -70,25 +70,17 @@ curl -fsSL https://get.docker.com | sudo sh && sudo usermod -aG docker "$USER"  
 git clone https://github.com/ivanajenjo/agregador-noticias.git && cd agregador-noticias
 cp .env.example .env && chmod 600 .env && nano .env                              # ver sección 3
 mkdir -p data && docker run --rm -v "$PWD/data:/data" alpine:3.22 chown 10001:10001 /data
-docker compose pull && docker compose up -d
+docker compose build && docker compose up -d
 docker compose ps        # esperar "healthy"
 ```
 
 Abre `http://IP-DE-LA-PI:8080` (o el `AGREGADOR_PORT` que hayas puesto).
 
-### Imágenes en GHCR (privadas por defecto)
+### Imagen
 
-GitHub Actions (`.github/workflows/release.yml`) publica `ghcr.io/ivanajenjo/agregador-noticias` para `linux/arm64` y `linux/amd64`:
-
-| Etiqueta | Contenido |
-|---|---|
-| `latest`, `sha-1234567` | último `main` (slim) |
-| `v1.2.3`, `1.2` | versión etiquetada (`make release VERSION=v1.2.3`) |
-| `latest-chromium`, `v1.2.3-chromium`, … | igual, con Chromium + fuentes |
-
-La primera vez el paquete es **privado**: o lo haces público (GitHub → Packages → el paquete → *Package settings* → *Change visibility*),
-o en la Pi haces `docker login ghcr.io -u TU_USUARIO` con un token con `read:packages`. Sin imagen publicada, usa `deploy/pi-install.sh --build`
-(compila en la Pi: ~5 min la primera vez, 1–2 GB de espacio temporal).
+No hay CI ni imágenes publicadas: la imagen se compila en la propia Pi con `docker compose build` (lo hacen `pi-install.sh` y `update.sh`).
+`AGREGADOR_TARGET` elige la variante (`slim` o `chromium`) y `AGREGADOR_IMAGE:AGREGADOR_TAG` solo da nombre a la imagen local.
+Para compilar en otro equipo: `make docker-buildx-arm64` y `docker save | ssh pi docker load`.
 
 ## 3. Configuración (`.env`)
 
@@ -106,7 +98,7 @@ Compose lee `.env` automáticamente. **Todas las variables están documentadas e
 | `AGREGADOR_SCREENSHOTS_CRON` | `0 9,17,22 * * *` | horas de captura |
 | `AGREGADOR_SCREENSHOTS_REMOTE_URL` | vacío | Chromium remoto/sidecar (`ws://IP:9222`) |
 | `AGREGADOR_MEM_LIMIT`, `_CPUS` | `256m`, `1.0` | límites del contenedor |
-| `AGREGADOR_TAG` | `latest` | `latest-chromium`, `v1.2.3`… |
+| `AGREGADOR_TAG` | `latest` | nombre de la imagen local (`latest-chromium` con `--chromium`) |
 
 Sin `AGREGADOR_*_BASE_URL` la app funciona igual (ingesta + búsqueda de texto); se activan embeddings y RAG al configurarlos.
 
@@ -282,13 +274,13 @@ docker compose start agregador
 ## 10. Actualizar y volver atrás
 
 ```bash
-deploy/update.sh        # git pull + docker compose pull + up -d + prune de imágenes viejas
+deploy/update.sh        # git pull + docker compose build + up -d + prune de imágenes viejas
 ```
 Hazlo después de un backup si la versión cambia el esquema de datos. Las migraciones de SQLite las aplica la app al arrancar.
 
-**Volver atrás:** fija la versión anterior en `.env` y recrea (las imágenes `vX.Y.Z` y `sha-xxxxxxx` no cambian):
+**Volver atrás:** vuelve al commit anterior y recompila:
 ```bash
-sed -i 's/^AGREGADOR_TAG=.*/AGREGADOR_TAG=v1.2.2/' .env && docker compose up -d
+git checkout <commit-anterior> && docker compose build && docker compose up -d
 ```
 Si la nueva versión migró la base de datos, restaura también el backup anterior (sección 9). `update.sh` guarda el id de la imagen previa en `.last-image` (`docker image ls` para referencia).
 
@@ -307,7 +299,7 @@ Los logs usan `json-file` con rotación (3 × 10 MB). La página `/estado` muest
 | `permission denied` / `unable to open database file` al arrancar | `./data` no pertenece al uid 10001 | `docker run --rm -v "$PWD/data:/data" alpine:3.22 chown 10001:10001 /data` |
 | Contenedor `unhealthy` | app caída o puerto distinto | `docker compose logs agregador`; `AGREGADOR_LISTEN` debe coincidir con el puerto interno (8080) |
 | `exec format error` | imagen de otra arquitectura / SO de 32 bits | usa Raspberry Pi OS 64-bit; `uname -m` = `aarch64` |
-| `pull access denied` / `unauthorized` | paquete GHCR privado o sin publicar | hazlo público, `docker login ghcr.io`, o `deploy/pi-install.sh --build` |
+| `pull access denied` / `unauthorized` | `docker compose pull` sin imagen publicada | compila: `docker compose build` (o `deploy/pi-install.sh` sin `--pull`) |
 | Embeddings/chat "LLM no disponible" | Mac dormido, firewall, URL con `.local` | prueba `docker compose exec agregador wget -qO- http://IP:11434/v1/models`; usa IP; revisa `OLLAMA_HOST=0.0.0.0` |
 | `no such host` con `macbook.local` | los contenedores no hacen mDNS | usa la IP o `extra_hosts` (sección 4) |
 | Capturas: `no Chrome/Chromium binary found` | imagen `slim` sin `REMOTE_URL` | usa `latest-chromium` o el sidecar (sección 5), o desactiva capturas |

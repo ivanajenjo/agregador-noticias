@@ -2,17 +2,17 @@
 # Instala/actualiza el agregador en una Raspberry Pi (Raspberry Pi OS 64-bit / Debian arm64) con Docker.
 # Idempotente: se puede relanzar sin romper nada. Ejecutar desde un clon del repositorio:
 #
-#   deploy/pi-install.sh [--install-docker] [--chromium] [--shots] [--https] [--no-auth] [--build]
+#   deploy/pi-install.sh [--install-docker] [--chromium] [--shots] [--https] [--no-auth] [--pull]
 #
 #   --install-docker  instala Docker con el script oficial (get.docker.com) si falta, sin preguntar
 #   --chromium        usa la imagen con Chromium integrado (latest-chromium, 768 MB de limite)
 #   --shots           activa tambien el sidecar Chromium (perfil `shots`; se guarda en COMPOSE_PROFILES)
 #   --https           activa Caddy con HTTPS interno (perfil `https`)
 #   --no-auth         no genera usuario/contrasena aleatorios en un .env nuevo
-#   --build           compila la imagen en la Pi en vez de descargarla de GHCR (lento)
+#   --pull            descarga la imagen de AGREGADOR_IMAGE en vez de compilarla en la Pi (por defecto se compila)
 set -eu
 
-INSTALL_DOCKER=0 CHROMIUM=0 SHOTS=0 HTTPS=0 AUTH=1 BUILD=0
+INSTALL_DOCKER=0 CHROMIUM=0 SHOTS=0 HTTPS=0 AUTH=1 BUILD=1
 for a in "$@"; do
   case "$a" in
     --install-docker) INSTALL_DOCKER=1 ;;
@@ -20,7 +20,8 @@ for a in "$@"; do
     --shots) SHOTS=1 ;;
     --https) HTTPS=1 ;;
     --no-auth) AUTH=0 ;;
-    --build) BUILD=1 ;;
+    --build) BUILD=1 ;;   # compatibilidad: ya es el defecto
+    --pull) BUILD=0 ;;
     -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
     *) echo "opcion desconocida: $a" >&2; exit 2 ;;
   esac

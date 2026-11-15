@@ -37,7 +37,7 @@ Las secciones sin datos o sin la dependencia necesaria se ocultan solas. Las eti
 | **Métricas y salud** | `/metrics` (Prometheus), `/healthz`, `/readyz` |
 | **API** | JSON + SSE, [OpenAPI](openapi.yaml) en `/api/docs`, exportación NDJSON |
 | **Móvil / PWA** | Mobile-first, navegación inferior con «Más», instalable (por HTTPS o localhost), claro/oscuro |
-| **Despliegue** | Imagen multi-arch, `docker compose` con límites, HTTPS opcional con Caddy, copias de seguridad, CI a GHCR |
+| **Despliegue** | Imagen multi-arch, `docker compose` con límites, HTTPS opcional con Caddy, copias de seguridad, compilación en la Pi |
 
 ## Mapa de páginas
 `/` Portada · `/buscar` · `/preguntar` · `/tendencias` (+ `/tendencias/termino/{key}`) · `/encuadre` (+ `/{storyID}`) · `/cambios` · `/resumen` (+ `/{día}`, `/resumen.atom`) · `/seguimientos` · `/anotaciones` · `/medios` (+ `/{id}`, `/comparar`) · `/capturas` (+ `/{medio}`) · `/portadas` · `/estado` · `/mas` · `/articulo/{id}`.

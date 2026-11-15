@@ -4,7 +4,7 @@ IMAGE   ?= ghcr.io/ivanajenjo/agregador-noticias
 LDFLAGS := -s -w -X main.version=$(VERSION)-$(COMMIT)
 
 .PHONY: build test run arm64 docker docker-build docker-build-chromium docker-buildx-arm64 \
-        up down logs ps backup update release lint-deploy help
+        up down logs ps backup update lint-deploy help
 
 help: ## Lista los objetivos
 	@grep -E '^[a-z0-9-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-22s %s\n", $$1, $$2}'
@@ -37,15 +37,8 @@ ps: ## Estado de los contenedores
 	docker compose ps
 backup: ## Copia SQLite consistente en ./backups (KEEP=7)
 	sh deploy/backup.sh
-update: ## Descarga la ultima imagen y reinicia
+update: ## git pull, recompila la imagen y reinicia
 	sh deploy/update.sh
-
-release: ## Crea y sube la etiqueta VERSION=vX.Y.Z; GitHub Actions publica las imagenes
-	@case "$(VERSION)" in v[0-9]*) ;; *) echo "uso: make release VERSION=v1.2.3" >&2; exit 2;; esac
-	@test -z "$$(git status --porcelain)" || { echo "arbol sucio: haz commit antes" >&2; exit 1; }
-	$(MAKE) test
-	git tag -a $(VERSION) -m "$(VERSION)"
-	git push origin $(VERSION)
 
 lint-deploy: ## shellcheck + hadolint + validacion de compose
 	shellcheck -s sh deploy/*.sh

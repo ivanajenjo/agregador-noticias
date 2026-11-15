@@ -70,7 +70,7 @@ preguntar (RAG)** para comparar cómo cada medio cuenta lo mismo. Uso personal, 
 - **Observabilidad**: `log/slog` estructurado, `/healthz`, `/api/status`, tabla de ejecuciones de jobs.
 - **Seguridad**: escucha en LAN; auth básica opcional (`AUTH_USER/AUTH_PASS`); sin secretos en el repo; fetch de URLs limitado a http(s) y descarte de IPs privadas en extracción de artículos (anti-SSRF); límites de tamaño de respuesta.
 - **Configuración**: YAML + variables de entorno (`AGREGADOR_*`) con valores por defecto sensatos; ver `config/config.example.yaml`.
-- **Calidad**: tests unitarios con `httptest` (feeds, LLM falso), `go vet`, `golangci-lint` opcional, CI GitHub Actions (test + build arm64 + imagen).
+- **Calidad**: tests unitarios con `httptest` (feeds, LLM falso), `go vet`, `golangci-lint` opcional; sin CI: `make test` en local y la imagen se compila en la Pi.
 - **Mantenibilidad**: paquetes pequeños con interfaces en `internal/domain`; sin frameworks pesados (stdlib `net/http` + `chi` opcional).
 - **Legal/ético**: uso personal; respetar `robots.txt` en extracción de artículo completo, rate limit, no republicar contenido. Las "líneas editoriales" son etiquetas **editables por el usuario**, no una verdad objetiva.
 
