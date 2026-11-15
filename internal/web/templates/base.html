@@ -15,6 +15,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/static/icon-192.png">
 <link rel="stylesheet" href="/static/app.css?v={{.Version}}">
+<script src="/static/theme.js?v={{.Version}}"></script>
 {{block "head" .V}}{{end}}
 <script src="/static/htmx.min.js?v=2.0.4" defer></script>
 <script src="/static/app.js?v={{.Version}}" defer></script>
@@ -28,6 +29,7 @@
   {{range .Items}}<a href="{{.Href}}" class="{{if not .Primary}}sec{{end}}"{{if eq $.Nav .Key}} aria-current="page"{{end}}><svg class="ic" viewBox="0 0 24 24" aria-hidden="true">{{.Icon}}</svg><span>{{.Label}}</span></a>
   {{end}}<a href="/mas" class="more"{{if .MoreActive}} aria-current="page"{{end}}><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></g></svg><span>Más</span></a>
  </nav>
+ <button type="button" class="theme" data-theme-toggle aria-label="Cambiar a modo claro" title="Cambiar a modo claro"><svg class="ic sun" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></g></svg><svg class="ic moon" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
 </header>
 <main id="main" class="wrap page-{{.Nav}}">
 {{template "content" .V}}

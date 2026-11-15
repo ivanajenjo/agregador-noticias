@@ -137,6 +137,8 @@ CREATE INDEX idx_annotations_kind_label ON article_annotations (kind, model, lab
 	"SELECT 1;",
 	"SELECT 1;",
 	"SELECT 1;",
+	// 7: outlet importance (orden de la portada), from `rank` in sources.yaml.
+	"ALTER TABLE sources ADD COLUMN rank INTEGER NOT NULL DEFAULT 0;",
 }
 
 func migrate(ctx context.Context, db *sql.DB) error {

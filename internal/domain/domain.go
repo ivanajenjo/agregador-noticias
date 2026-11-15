@@ -15,6 +15,7 @@ type Source struct {
 	Homepage        string   `yaml:"homepage"`
 	Region          string   `yaml:"region"` // optional: "nacional", "cataluña", "aragón"...
 	Kind            string   `yaml:"kind"`   // optional: prensa|radio|tv|agencia|digital|verificacion
+	Rank            int      `yaml:"rank"`   // optional: column order on the home page, 1 = first; 0 => after the ranked ones
 	Feeds           []Feed   `yaml:"feeds"`
 	FullText        bool     `yaml:"full_text"`        // fetch article page + readability when feed lacks body
 	Screenshot      bool     `yaml:"screenshot"`       // take front-page screenshots

@@ -157,7 +157,7 @@ func (s *server) buildHome(ctx context.Context) homeView {
 		v.Err = "No se pudo leer la lista de medios."
 		return v
 	}
-	for _, so := range sortSources(src) {
+	for _, so := range homeSources(src) {
 		arts, err := s.d.Store.ListArticles(ctx, domain.Filter{SourceIDs: []string{so.ID}, Limit: homePerSource})
 		if err != nil {
 			s.log.Warn("home: articles", "source", so.ID, "err", err)

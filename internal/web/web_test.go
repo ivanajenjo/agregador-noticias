@@ -257,6 +257,24 @@ func TestHomeContent(t *testing.T) {
 	}
 }
 
+func TestHomeSourcesRankFirst(t *testing.T) {
+	off := false
+	src := []domain.Source{
+		{ID: "z", Name: "Zeta", Leaning: "izquierda"},
+		{ID: "b", Name: "Beta", Leaning: "derecha", Rank: 2},
+		{ID: "a", Name: "Alfa", Leaning: "centro", Rank: 1},
+		{ID: "x", Name: "Equis", Leaning: "derecha"},
+		{ID: "off", Name: "Apagado", Rank: 3, Enabled: &off},
+	}
+	var got []string
+	for _, so := range homeSources(src) {
+		got = append(got, so.ID)
+	}
+	if strings.Join(got, ",") != "a,b,z,x" {
+		t.Fatalf("order = %v, want a,b,z,x", got)
+	}
+}
+
 func TestXSSEscaping(t *testing.T) {
 	h, _, _, _ := newHandler(t, nil)
 	for _, p := range []string{"/", "/buscar?q=x", "/articulo/1", "/estado", "/capturas"} {

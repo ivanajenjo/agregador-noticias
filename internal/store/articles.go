@@ -45,12 +45,12 @@ func (s *SQLite) UpsertSources(ctx context.Context, src []domain.Source) error {
 			feeds, _ := json.Marshal(nonNilFeeds(x.Feeds))
 			cs, _ := json.Marshal(nonNilStrings(x.CookieSelectors))
 			_, err := tx.ExecContext(ctx, `
-INSERT INTO sources (id,name,leaning,homepage,feeds_json,full_text,screenshot,cookie_selectors_json,enabled)
-VALUES (?,?,?,?,?,?,?,?,?)
+INSERT INTO sources (id,name,leaning,homepage,feeds_json,full_text,screenshot,cookie_selectors_json,enabled,rank)
+VALUES (?,?,?,?,?,?,?,?,?,?)
 ON CONFLICT(id) DO UPDATE SET name=excluded.name, leaning=excluded.leaning, homepage=excluded.homepage,
   feeds_json=excluded.feeds_json, full_text=excluded.full_text, screenshot=excluded.screenshot,
-  cookie_selectors_json=excluded.cookie_selectors_json, enabled=excluded.enabled`,
-				x.ID, x.Name, x.Leaning, x.Homepage, string(feeds), b2i(x.FullText), b2i(x.Screenshot), string(cs), b2i(x.IsEnabled()))
+  cookie_selectors_json=excluded.cookie_selectors_json, enabled=excluded.enabled, rank=excluded.rank`,
+				x.ID, x.Name, x.Leaning, x.Homepage, string(feeds), b2i(x.FullText), b2i(x.Screenshot), string(cs), b2i(x.IsEnabled()), x.Rank)
 			if err != nil {
 				return err
 			}
@@ -74,7 +74,7 @@ func nonNilStrings(f []string) []string {
 
 // feedJSON mirrors domain.Feed with explicit JSON keys (domain only has yaml tags).
 func (s *SQLite) ListSources(ctx context.Context) ([]domain.Source, error) {
-	rows, err := s.r.QueryContext(ctx, `SELECT id,name,leaning,homepage,feeds_json,full_text,screenshot,cookie_selectors_json,enabled FROM sources ORDER BY id`)
+	rows, err := s.r.QueryContext(ctx, `SELECT id,name,leaning,homepage,feeds_json,full_text,screenshot,cookie_selectors_json,enabled,rank FROM sources ORDER BY id`)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (s *SQLite) ListSources(ctx context.Context) ([]domain.Source, error) {
 		var x domain.Source
 		var feeds, cs string
 		var ft, sh, en int
-		if err := rows.Scan(&x.ID, &x.Name, &x.Leaning, &x.Homepage, &feeds, &ft, &sh, &cs, &en); err != nil {
+		if err := rows.Scan(&x.ID, &x.Name, &x.Leaning, &x.Homepage, &feeds, &ft, &sh, &cs, &en, &x.Rank); err != nil {
 			return nil, err
 		}
 		_ = json.Unmarshal([]byte(feeds), &x.Feeds)

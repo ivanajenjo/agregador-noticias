@@ -193,6 +193,20 @@ func sortSources(src []domain.Source) []domain.Source {
 	return out
 }
 
+// homeSources orders the home columns by outlet importance (`rank` in
+// sources.yaml, 1 = first); unranked outlets follow in sortSources order.
+func homeSources(src []domain.Source) []domain.Source {
+	out := sortSources(src)
+	sort.SliceStable(out, func(i, j int) bool {
+		ri, rj := out[i].Rank, out[j].Rank
+		if ri <= 0 || rj <= 0 {
+			return ri > 0 && rj <= 0
+		}
+		return ri < rj
+	})
+	return out
+}
+
 var markRe = regexp.MustCompile(`(?i)</?mark>`)
 var tagRe = regexp.MustCompile(`<[^>]*>`)
 

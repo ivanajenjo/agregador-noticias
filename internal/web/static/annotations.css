@@ -1,6 +1,7 @@
 /* Tono / intención / encuadre */
 :root{--a0:#9a978d;--a1:#c9553a;--a2:#5f8f6a;--a3:#b0852a;--a4:#a3508a;--a5:#4f7fa8}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--a0:#7d7a72;--a1:#d9705a;--a2:#7fae88;--a3:#cfa24c;--a4:#c070a8;--a5:#6f9fc8}}
+:root[data-theme="dark"]{--a0:#7d7a72;--a1:#d9705a;--a2:#7fae88;--a3:#cfa24c;--a4:#c070a8;--a5:#6f9fc8}
 .caveat{display:block;max-width:70ch;margin:.2rem 0 1rem}
 .abar{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;align-items:center;margin:.4rem 0 .6rem}
 .abar .conf{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:.2rem .6rem;min-height:44px}

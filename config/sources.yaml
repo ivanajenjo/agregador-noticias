@@ -8,6 +8,11 @@
 # `region` (opcional): ámbito geográfico ("nacional" o comunidad). `kind`
 # (opcional): prensa | radio | tv | agencia | digital | verificacion.
 #
+# `rank` (opcional): orden de las columnas en la Portada, 1 = la primera.
+# Refleja la importancia de cada cabecera (aprox. audiencia: generalistas
+# nacionales, luego agencia, TV/radio, economía, digitales y deportes); los
+# medios sin `rank` van detrás, por línea editorial y nombre. Editable.
+#
 # Feeds verificados con `curl -sSL` y el User-Agent honesto del proyecto
 # ("agregador-noticias/2.0 (personal news aggregator)"): HTTP 200, RSS/Atom
 # valido, >= 5 items y el mas reciente de los ultimos dias. Si un feed solo
@@ -32,6 +37,7 @@ sources:
     homepage: https://elpais.com
     region: nacional
     kind: prensa
+    rank: 1
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -45,6 +51,7 @@ sources:
     homepage: https://www.eldiario.es
     region: nacional
     kind: digital
+    rank: 7
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -58,6 +65,7 @@ sources:
     homepage: https://www.infolibre.es
     region: nacional
     kind: digital
+    rank: 23
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button", "#onetrust-accept-btn-handler"]
@@ -69,6 +77,7 @@ sources:
     homepage: https://www.lavanguardia.com
     region: cataluña
     kind: prensa
+    rank: 4
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -82,6 +91,7 @@ sources:
     homepage: https://www.elperiodico.com
     region: cataluña
     kind: prensa
+    rank: 10
     # DESACTIVADA: el servidor (Prensa Ibérica) responde 406 al User-Agent honesto del
     # agregador y solo sirve el feed a UAs de navegador; no suplantamos navegadores.
     enabled: false
@@ -97,6 +107,7 @@ sources:
     homepage: https://www.20minutos.es
     region: nacional
     kind: prensa
+    rank: 5
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -110,6 +121,7 @@ sources:
     homepage: https://www.elmundo.es
     region: nacional
     kind: prensa
+    rank: 2
     full_text: true
     screenshot: true
     cookie_selectors: ["#onetrust-accept-btn-handler"]
@@ -123,6 +135,7 @@ sources:
     homepage: https://www.abc.es
     region: nacional
     kind: prensa
+    rank: 3
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -136,6 +149,7 @@ sources:
     homepage: https://www.elconfidencial.com
     region: nacional
     kind: digital
+    rank: 6
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -149,6 +163,7 @@ sources:
     homepage: https://www.elespanol.com
     region: nacional
     kind: digital
+    rank: 8
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -161,6 +176,7 @@ sources:
     homepage: https://okdiario.com
     region: nacional
     kind: digital
+    rank: 11
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button", "button.fc-cta-consent"]
@@ -174,6 +190,7 @@ sources:
     homepage: https://www.libertaddigital.com
     region: nacional
     kind: digital
+    rank: 20
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button", "button.fc-cta-consent"]
@@ -185,6 +202,7 @@ sources:
     homepage: https://theobjective.com
     region: nacional
     kind: digital
+    rank: 21
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button", "#onetrust-accept-btn-handler"]
@@ -198,6 +216,7 @@ sources:
     homepage: https://www.eldebate.com
     region: nacional
     kind: digital
+    rank: 22
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button", "#onetrust-accept-btn-handler"]
@@ -209,6 +228,7 @@ sources:
     homepage: https://www.expansion.com
     region: nacional
     kind: prensa
+    rank: 18
     full_text: true
     screenshot: true
     cookie_selectors: ["#onetrust-accept-btn-handler"]
@@ -220,6 +240,7 @@ sources:
     homepage: https://www.larazon.es
     region: nacional
     kind: prensa
+    rank: 9
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -234,6 +255,7 @@ sources:
     homepage: https://www.europapress.es
     region: nacional
     kind: agencia
+    rank: 12
     full_text: false
     screenshot: false
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -248,6 +270,7 @@ sources:
     homepage: https://www.cope.es
     region: nacional
     kind: radio
+    rank: 16
     full_text: true
     screenshot: false
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -259,6 +282,7 @@ sources:
     homepage: https://www.ondacero.es
     region: nacional
     kind: radio
+    rank: 17
     full_text: true
     screenshot: false
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -270,6 +294,7 @@ sources:
     homepage: https://www.telecinco.es
     region: nacional
     kind: tv
+    rank: 15
     full_text: true
     screenshot: false
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -281,6 +306,7 @@ sources:
     homepage: https://www.antena3.com
     region: nacional
     kind: tv
+    rank: 13
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -293,6 +319,7 @@ sources:
     homepage: https://www.lasexta.com
     region: nacional
     kind: tv
+    rank: 14
     full_text: true
     screenshot: true
     cookie_selectors: ["#didomi-notice-agree-button"]
@@ -316,6 +343,7 @@ sources:
     homepage: https://cincodias.elpais.com
     region: nacional
     kind: prensa
+    rank: 19
     full_text: true
     screenshot: true
     cookie_selectors: []
@@ -396,6 +424,7 @@ sources:
     homepage: https://www.marca.com
     region: nacional
     kind: prensa
+    rank: 24
     full_text: true
     screenshot: false
     cookie_selectors: ["#didomi-notice-agree-button", "button.fc-cta-consent"]
@@ -407,6 +436,7 @@ sources:
     homepage: https://as.com
     region: nacional
     kind: prensa
+    rank: 25
     full_text: true
     screenshot: false
     cookie_selectors: ["#didomi-notice-agree-button"]

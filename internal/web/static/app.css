@@ -10,10 +10,17 @@
  --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px);--sar:env(safe-area-inset-right,0px);
  color-scheme:light dark;
 }
-@media (prefers-color-scheme:dark){:root{
+/* Dark palette: follows the system unless the header toggle forces a theme
+   (data-theme on <html>, see theme.js); each dark block is repeated for both. */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
  --bg:#1f1e1d;--surface:#262624;--surface2:#302f2c;--text:#f0eee6;--muted:#a6a39a;--border:#3a3935;
  --accent:#d97757;--accent-text:#e8956f;--ok:#8fbf8a;--bad:#ee8a73;--warn:#e0b25c;
  --p0:#4a3a33;--p1:#4a3e33;--p2:#403d34;--p3:#38403a;--p4:#343e42;--p5:#3a3935}}
+:root[data-theme="dark"]{
+ --bg:#1f1e1d;--surface:#262624;--surface2:#302f2c;--text:#f0eee6;--muted:#a6a39a;--border:#3a3935;
+ --accent:#d97757;--accent-text:#e8956f;--ok:#8fbf8a;--bad:#ee8a73;--warn:#e0b25c;
+ --p0:#4a3a33;--p1:#4a3e33;--p2:#403d34;--p3:#38403a;--p4:#343e42;--p5:#3a3935}
+:root[data-theme="light"]{color-scheme:light}:root[data-theme="dark"]{color-scheme:dark}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 var(--sans);
@@ -38,6 +45,11 @@ h1{font-size:clamp(1.8rem,4vw,2.4rem);margin:1.2rem 0 1rem}h2{font-size:1.2rem;m
 .nav a:hover{color:var(--text);text-decoration:none}
 .nav a[aria-current=page]{color:var(--text);border-bottom-color:var(--accent)}
 .nav .ic{display:none}
+.theme{flex:none;display:grid;place-items:center;width:40px;height:40px;padding:0;border:1px solid var(--border);border-radius:50%;background:transparent;color:var(--muted);cursor:pointer}
+.theme:hover{color:var(--text);border-color:var(--accent)}
+.theme .ic{width:20px;height:20px}.theme .sun{display:none}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .theme .sun{display:block}:root:not([data-theme="light"]) .theme .moon{display:none}}
+:root[data-theme="dark"] .theme .sun{display:block}:root[data-theme="dark"] .theme .moon{display:none}
 .ic{width:24px;height:24px;flex:none}
 
 /* controls */
@@ -76,7 +88,8 @@ p.notice{display:block}
 .ext{margin-left:auto;display:inline-flex;align-items:center;min-height:32px}
 .snip{margin:.3rem 0 0;color:var(--text);opacity:.85;font-size:.95rem}
 mark{background:#f3d9cb;color:inherit;border-radius:3px;padding:0 2px}
-@media (prefers-color-scheme:dark){mark{background:#5a3a2c;color:inherit}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) mark{background:#5a3a2c;color:inherit}}
+:root[data-theme="dark"] mark{background:#5a3a2c;color:inherit}
 
 /* search */
 .sbar,.cbar{display:flex;gap:.5rem;align-items:flex-end;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:.35rem .35rem .35rem .8rem}
@@ -157,6 +170,7 @@ section{margin-bottom:1.4rem}
 /* mobile: bottom app nav, cards */
 @media (max-width:699.98px){
  .top{padding:.45rem 1rem}
+ .theme{margin-left:auto}
  .nav{position:fixed;left:0;right:0;bottom:0;margin:0;gap:0;background:var(--surface);border-top:1px solid var(--border);
   padding:0 var(--sar) var(--sab) var(--sal);z-index:50;justify-content:space-around}
  .nav a{flex:1;flex-direction:column;gap:2px;justify-content:center;padding:.35rem .1rem;min-height:var(--nav-h);min-width:44px;border-radius:0;font-size:.7rem}
@@ -198,7 +212,8 @@ input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-sea
 
 /* tendencias */
 :root{--b0:#b4553a;--b1:#d28a68;--b2:#b7a97f;--b3:#86a38e;--b4:#5f8396;--b5:#b3afa3}
-@media (prefers-color-scheme:dark){:root{--b0:#c4694d;--b1:#a8735d;--b2:#8d8670;--b3:#6c8a79;--b4:#5d8296;--b5:#5d5b54}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--b0:#c4694d;--b1:#a8735d;--b2:#8d8670;--b3:#6c8a79;--b4:#5d8296;--b5:#5d5b54}}
+:root[data-theme="dark"]{--b0:#c4694d;--b1:#a8735d;--b2:#8d8670;--b3:#6c8a79;--b4:#5d8296;--b5:#5d5b54}
 .b0{fill:var(--b0)}.b1{fill:var(--b1)}.b2{fill:var(--b2)}.b3{fill:var(--b3)}.b4{fill:var(--b4)}.b5{fill:var(--b5)}
 .lead-sm{color:var(--muted);max-width:62ch;margin:-.4rem 0 .8rem}
 .back{margin:.6rem 0 0}
