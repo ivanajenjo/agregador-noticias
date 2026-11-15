@@ -305,3 +305,20 @@ func TestContextCancelKillsBrowser(t *testing.T) {
 		t.Fatalf("cancel took too long: %v", d)
 	}
 }
+
+func TestIsBlockPage(t *testing.T) {
+	prisa := "elpais.com\nAccess is temporarily restricted\nWe detected unusual activity from your device or network.\nReasons may include:"
+	for _, c := range []struct {
+		text string
+		want bool
+	}{
+		{prisa, true},
+		{"Just a moment...\nChecking your browser", true},
+		{"EL PAÍS: el periódico global\nÚltimas noticias", false},
+		{"Portada\nUn juez investiga el acceso denegado a...\n" + strings.Repeat("noticia ", 400), false},
+	} {
+		if got := isBlockPage(c.text); got != c.want {
+			t.Errorf("isBlockPage(%.40q) = %v, want %v", c.text, got, c.want)
+		}
+	}
+}

@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -226,6 +227,9 @@ func (t *Taker) captureSource(ctx, browserCtx context.Context, s domain.Source) 
 		return fmt.Errorf("navigate: %w", err)
 	}
 	_ = chromedp.Do(tctx, chromedp.Sleep(o.SettleDelay))
+	if text, err := chromedp.Run(tctx, chromedp.Evaluate[string](pageTextJS)); err == nil && isBlockPage(text) {
+		return errBlocked
+	}
 
 	t.dismissCookies(tctx, s)
 	t.hideOverlays(tctx)
@@ -267,6 +271,24 @@ func (t *Taker) captureSource(ctx, browserCtx context.Context, s domain.Source) 
 		}
 	}
 	return nil
+}
+
+// errBlocked: the site served an anti-bot page instead of its front page. It
+// is not saved, so it does not pollute the history or the comparisons.
+var errBlocked = errors.New("blocked by the site's anti-bot page (not saved)")
+
+// pageTextJS returns the title and the start of the visible text.
+const pageTextJS = `(document.title + "\n" + (document.body ? document.body.innerText : "")).slice(0, 3000)`
+
+// blockPageRe matches the wording of common bot walls (Prisa, DataDome,
+// Cloudflare, Akamai...). Only checked on short pages: a front page that
+// mentions "captcha" in a headline is still a front page.
+var blockPageRe = regexp.MustCompile(`(?i)access (is temporarily restricted|denied)|unusual activity from your (device|network)|` +
+	`just a moment\.\.\.|verify(ing)? you are (a )?human|please enable (js|javascript) and disable any ad blocker|` +
+	`acceso (denegado|restringido)|actividad inusual`)
+
+func isBlockPage(text string) bool {
+	return len(text) < 2000 && blockPageRe.MatchString(text)
 }
 
 // captureTimeout bounds the screenshot itself, independently of PageTimeout.
