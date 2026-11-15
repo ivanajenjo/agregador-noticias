@@ -1,0 +1,28 @@
+# Despliega en la Raspberry Pi al hacer push a master. Corre en el runner self-hosted de la Pi
+# (instalado con deploy/setup-runner.sh), que ejecuta deploy/update.sh en el checkout de produccion.
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+    paths-ignore: ["docs/**", "**.md"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Los forks no tienen runner en la Pi.
+    if: github.repository == 'ivanajenjo/agregador-noticias'
+    runs-on: [self-hosted, pi]
+    timeout-minutes: 40
+    env:
+      DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
+    steps:
+      - name: Actualizar y reiniciar
+        run: sh "${DEPLOY_DIR:-$HOME/agregador-noticias}/deploy/update.sh"

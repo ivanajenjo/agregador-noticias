@@ -45,6 +45,7 @@ git clone https://github.com/ivanajenjo/agregador-noticias.git && cd agregador-n
 deploy/pi-install.sh --install-docker [--chromium] [--shots] [--https]
 nano .env && docker compose up -d
 ```
+Después, `sudo RUNNER_TOKEN=<token> sh deploy/setup-runner.sh` instala un runner de GitHub Actions en la Pi y cada push a `master` se despliega solo.
 Guía completa (límites de recursos, HTTPS/PWA, copias de seguridad, actualizaciones): [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md).
 
 ## Documentación
