@@ -159,7 +159,8 @@ Un Chromium sin interfaz abre cada portada, acepta cookies y guarda un JPEG. No 
 **A. Imagen con Chromium.** En `.env`:
 ```
 AGREGADOR_TAG=latest-chromium
-AGREGADOR_MEM_LIMIT=768m
+AGREGADOR_MEM_LIMIT=1536m
+AGREGADOR_CPUS=2.0
 AGREGADOR_PIDS_LIMIT=512
 AGREGADOR_TMP_SIZE=512m
 AGREGADOR_GOMEMLIMIT=128MiB
@@ -168,6 +169,8 @@ AGREGADOR_GOMEMLIMIT=128MiB
 `AGREGADOR_SCREENSHOTS_NO_SANDBOX=true` (el sandbox de Chromium necesita privilegios que el contenedor no tiene: `cap_drop: ALL`).
 La app ya lanza Chromium con `--disable-dev-shm-usage` (usa `/tmp`, que es un tmpfs), así que no hace falta `shm_size`.
 El perfil temporal de Chromium vive en `/tmp` (RAM): por eso `AGREGADOR_TMP_SIZE=512m`. Cuenta contra el límite de memoria del contenedor.
+Con 768 MB las portadas con mucha publicidad no caben: el kernel expulsa una y otra vez las páginas del binario de Chromium
+(lecturas de disco enormes en `docker stats`) y todas las capturas acaban en `context deadline exceeded`.
 
 **B. Sidecar.** `docker compose --profile shots up -d` (o `COMPOSE_PROFILES=shots` en `.env`) y pon la URL en `.env`.
 **Importante:** Chromium rechaza peticiones CDP cuya cabecera `Host` no sea una IP o `localhost`, por eso la app lo contacta por **IP fija**
@@ -227,7 +230,7 @@ Puertos 80/443 ocupados por otro proyecto: cambia `CADDY_HTTP_PORT`/`CADDY_HTTPS
 
 - **Puertos:** publica en otro puerto con `AGREGADOR_PORT=8090`. Comprueba los ocupados con `ss -ltnp`.
 - **Red:** la app usa su propia red `agregador` (subred 172.29.77.0/24, configurable); no toca el resto. Si otro proyecto ya usa esa subred, cambia `AGREGADOR_SUBNET`/`CHROME_IP`.
-- **Recursos:** `mem_limit` 256 MB (768 MB con Chromium), `cpus` 1.0, `pids_limit` y logs rotados (3×10 MB) acotan el impacto. Suma los límites de todos tus proyectos frente a la RAM de la Pi (`free -h`); sin swap un OOM mata procesos de otros contenedores.
+- **Recursos:** `mem_limit` 256 MB (1536 MB con Chromium), `cpus` 1.0 (2.0 con Chromium), `pids_limit` y logs rotados (3×10 MB) acotan el impacto. Suma los límites de todos tus proyectos frente a la RAM de la Pi (`free -h`); sin swap un OOM mata procesos de otros contenedores.
 - **Proxy inverso compartido** (Traefik, Nginx Proxy Manager, Caddy propio): no actives el perfil `https`, deja `AGREGADOR_BIND=127.0.0.1` y haz que ese proxy apunte a `127.0.0.1:AGREGADOR_PORT`; o conecta el contenedor a la red del proxy en un `docker-compose.override.yml`:
   ```yaml
   services:

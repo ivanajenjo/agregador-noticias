@@ -222,13 +222,10 @@ func (t *Taker) captureSource(ctx, browserCtx context.Context, s domain.Source) 
 	defer stop()
 
 	o := t.opts
-	if err := chromedp.Do(tctx,
-		chromedp.EmulateViewport(int64(o.Width), int64(o.Height)),
-		chromedp.Navigate(s.Homepage),
-		chromedp.Sleep(o.SettleDelay),
-	); err != nil {
+	if err := t.navigate(tctx, s); err != nil {
 		return fmt.Errorf("navigate: %w", err)
 	}
+	_ = chromedp.Do(tctx, chromedp.Sleep(o.SettleDelay))
 
 	t.dismissCookies(tctx, s)
 	t.hideOverlays(tctx)
@@ -245,7 +242,13 @@ func (t *Taker) captureSource(ctx, browserCtx context.Context, s domain.Source) 
 		}
 	}
 
-	buf, w, h, err := t.capture(tctx)
+	// The capture gets its own budget: on a slow box the steps above can use
+	// up the page budget, and a full-page JPEG still takes several seconds.
+	cctx, ccancel := context.WithTimeout(tabCtx, captureTimeout)
+	defer ccancel()
+	stopC := context.AfterFunc(ctx, ccancel)
+	defer stopC()
+	buf, w, h, err := t.capture(cctx)
 	if err != nil {
 		return fmt.Errorf("capture: %w", err)
 	}
@@ -263,6 +266,30 @@ func (t *Taker) captureSource(ctx, browserCtx context.Context, s domain.Source) 
 			t.log.Info("front-page items saved", "source", s.ID, "n", len(items), "top", items[0].Title)
 		}
 	}
+	return nil
+}
+
+// captureTimeout bounds the screenshot itself, independently of PageTimeout.
+const captureTimeout = 30 * time.Second
+
+// navigate loads the homepage waiting for the load event at most half of the
+// page budget. Ad-heavy front pages often never fire it in time; if the DOM is
+// usable by then we carry on instead of failing the capture.
+func (t *Taker) navigate(ctx context.Context, s domain.Source) error {
+	nctx, cancel := context.WithTimeout(ctx, t.opts.PageTimeout/2)
+	defer cancel()
+	err := chromedp.Do(nctx,
+		chromedp.EmulateViewport(int64(t.opts.Width), int64(t.opts.Height)),
+		chromedp.Navigate(s.Homepage),
+	)
+	if err == nil || !errors.Is(err, context.DeadlineExceeded) || ctx.Err() != nil {
+		return err
+	}
+	state, rerr := chromedp.Run(ctx, chromedp.Evaluate[string](`document.readyState`))
+	if rerr != nil || state == "loading" {
+		return err
+	}
+	t.log.Info("load event not reached, continuing with ready DOM", "source", s.ID, "state", state)
 	return nil
 }
 

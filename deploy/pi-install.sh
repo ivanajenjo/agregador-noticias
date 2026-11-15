@@ -5,7 +5,7 @@
 #   deploy/pi-install.sh [--install-docker] [--chromium] [--shots] [--https] [--no-auth] [--pull]
 #
 #   --install-docker  instala Docker con el script oficial (get.docker.com) si falta, sin preguntar
-#   --chromium        usa la imagen con Chromium integrado (latest-chromium, 768 MB de limite)
+#   --chromium        usa la imagen con Chromium integrado (latest-chromium, 1536 MB de limite y 2 CPU)
 #   --shots           activa tambien el sidecar Chromium (perfil `shots`; se guarda en COMPOSE_PROFILES)
 #   --https           activa Caddy con HTTPS interno (perfil `https`)
 #   --no-auth         no genera usuario/contrasena aleatorios en un .env nuevo
@@ -87,7 +87,8 @@ fi
 if [ "$CHROMIUM" -eq 1 ]; then
   set_env AGREGADOR_TAG latest-chromium
   set_env AGREGADOR_TARGET chromium
-  set_env AGREGADOR_MEM_LIMIT 768m
+  set_env AGREGADOR_MEM_LIMIT 1536m
+  set_env AGREGADOR_CPUS 2.0
   set_env AGREGADOR_PIDS_LIMIT 512
   set_env AGREGADOR_TMP_SIZE 512m
   set_env AGREGADOR_GOMEMLIMIT 128MiB

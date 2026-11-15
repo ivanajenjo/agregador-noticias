@@ -31,7 +31,7 @@ services:
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     stop_grace_period: 30s                   # el binario cierra en < 15 s con SIGTERM
-    mem_limit: ${AGREGADOR_MEM_LIMIT:-256m}  # con imagen -chromium sube a 768m (ver .env.example)
+    mem_limit: ${AGREGADOR_MEM_LIMIT:-256m}  # con imagen -chromium sube a 1536m (ver .env.example)
     memswap_limit: ${AGREGADOR_MEM_LIMIT:-256m}
     cpus: ${AGREGADOR_CPUS:-1.0}
     pids_limit: ${AGREGADOR_PIDS_LIMIT:-256}
