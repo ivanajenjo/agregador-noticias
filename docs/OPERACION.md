@@ -60,6 +60,13 @@ con `agregador_db_bytes` y `agregador_shots_bytes`.
 - Mueve `data/` a un SSD USB si puedes; es lo que más alarga la vida del equipo.
 - Usa retención y baja la frecuencia de capturas si la SD es pequeña.
 - Registros: evita volcar logs a la SD (`docker logs` con rotación).
+- Lo que más escribe es **desplegar**: cada `docker compose build` son ~1,5 GB en la SD. Agrupa los cambios
+  en un solo push en vez de varios seguidos. `update.sh` purga la caché de build de más de 7 días.
+- Del sistema: `sudo sh deploy/pi-reduce-writes.sh` deja journald en RAM, desactiva rsyslog y el logging de
+  ufw, y monta `/` con `noatime`. Medido el 2026-11-15: sin despliegues, la Pi escribía ~1 GB/día y el journal
+  era casi la mitad.
+- Si el log del kernel muestra `Undervoltage detected!`, cambia la fuente (5,1 V / 3 A): un corte de tensión
+  escribiendo corrompe la SD antes que cualquier desgaste.
 
 ## Métricas Prometheus
 

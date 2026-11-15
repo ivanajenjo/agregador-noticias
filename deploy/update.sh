@@ -17,4 +17,5 @@ if [ -n "$old" ]; then echo "$old" > .last-image; fi   # por si hay que volver a
 $DOCKER compose build
 $DOCKER compose up -d --remove-orphans --wait --wait-timeout 180   # falla si no llega a healthy
 $DOCKER image prune -f >/dev/null
+$DOCKER builder prune -f --filter until=168h >/dev/null   # la cache de build crece ~1 GB por despliegue
 $DOCKER compose ps
