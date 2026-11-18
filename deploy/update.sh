@@ -1,6 +1,5 @@
 #!/bin/sh
 # Actualiza a la ultima version: git pull (si es un clon), compila la imagen, up -d y limpia imagenes viejas.
-# Lo lanza el workflow Deploy en cada push a master (runner de la Pi, ver deploy/setup-runner.sh).
 # Rollback: git checkout <commit-anterior> && docker compose build && docker compose up -d (ver docs/DESPLIEGUE.md).
 set -eu
 
