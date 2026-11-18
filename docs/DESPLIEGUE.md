@@ -276,27 +276,11 @@ docker compose start agregador
 
 ## 10. Actualizar y volver atrás
 
-**Despliegue automático desde GitHub.** Cada push a `master` (salvo cambios solo en `docs/` o `*.md`) lanza el workflow
-`.github/workflows/deploy.yml`, que corre en un **runner self-hosted de GitHub Actions instalado en la propia Pi** y ejecuta
-`deploy/update.sh` en el checkout de producción (`~/agregador-noticias`, o la variable de repo `DEPLOY_DIR`). El runner abre una
-conexión saliente hacia GitHub: no hay que abrir puertos ni guardar claves SSH en GitHub. El resultado y los logs se ven en
-GitHub → Actions → Deploy, y se puede relanzar a mano con *Run workflow*.
-
-Instalarlo (una vez; como servicio systemd que corre con el dueño del checkout, que debe estar en el grupo `docker`):
-```bash
-# en tu equipo: token de registro (caduca en 1 h)
-gh api -X POST repos/ivanajenjo/agregador-noticias/actions/runners/registration-token --jq .token
-# en la Pi
-sudo RUNNER_TOKEN=<token> sh deploy/setup-runner.sh
-```
-El repo es público: en GitHub → Settings → Actions → General deja **«Require approval for all external contributors»**, para que
-una PR de un fork no pueda ejecutar código en el runner de la Pi. El job además solo corre en el repo original.
-
-**A mano** (equivale a lo que hace el workflow):
+En la Pi, desde el checkout:
 ```bash
 deploy/update.sh        # git pull + docker compose build + up -d --wait + prune de imágenes viejas
 ```
-Falla (y el workflow queda en rojo) si `git pull` no avanza limpio o si la app no llega a `healthy` en 3 minutos.
+Falla si `git pull` no avanza limpio o si la app no llega a `healthy` en 3 minutos.
 Hazlo después de un backup si la versión cambia el esquema de datos. Las migraciones de SQLite las aplica la app al arrancar.
 
 **Volver atrás:** lo más limpio es `git revert` del commit en tu equipo y push (se despliega solo). En la Pi, de urgencia:
